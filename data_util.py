@@ -185,6 +185,9 @@ def add_indicators(data, indicator_set='default'):
         
         # Add EMA
         data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()
+    
+        # VWAP calculation
+        data['VWAP'] = (data['Close'] * data['Volume']).cumsum() / data['Volume'].cumsum()
 
     else:
         raise ValueError("Invalid indicator set. Use 'default' or 'alternate'.")
@@ -226,7 +229,7 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
             end=end
         )
 
-        print(f"Fetching daily data for {ticker}")
+        print(f"Fetching data for {ticker}")
         bars = data_client.get_stock_bars(request_params)
 
         if not hasattr(bars, 'df') or bars.df.empty:

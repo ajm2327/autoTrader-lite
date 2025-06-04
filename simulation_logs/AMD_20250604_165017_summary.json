@@ -1,0 +1,15 @@
+{
+  "ticker": "AMD",
+  "simulation_period": "2025-03-01 to 2025-04-17",
+  "simulation_id": "AMD_20250604_165017",
+  "total_decisions": 16,
+  "trades": {
+    "total_trades": 0,
+    "winning_trades": 0,
+    "losing_trades": 0,
+    "win_rate": 0,
+    "total_profit": 0
+  },
+  "final_position": "NOT IN POSITION",
+  "timestamp": "2025-06-04 16:52:31.722791"
+}

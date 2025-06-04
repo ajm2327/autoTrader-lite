@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import yfinance as yf
 from sklearn.preprocessing import MinMaxScaler
 from tensorflow.keras import layers, models, optimizers
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
@@ -11,11 +10,11 @@ import json
 from datetime import datetime
 
 class StockPredictor:
-    def __init__(self):
+    def __init__(self, data):
         #Default parameters
         self.version = "1.0.0"
         self.training_metadata = {}
-        self.backcandles = 7
+        self.backcandles = 20
         self.target_column = -1
         self.feature_columns = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
         self.lstm_units = 100
@@ -26,70 +25,6 @@ class StockPredictor:
         self.model = None
         self.scaler = None
 
-    
-    def get_ticker_data(self, TICKER, START_DATE='2014-08-01', END_DATE='2024-08-01'):
-        # Your existing get_ticker_data function
-        try:
-            data = yf.download(TICKER, start=START_DATE, end=END_DATE)
-            if data.empty:
-                raise ValueError(f"No data found for {TICKER}")
-            return data
-        except Exception as e:
-            print(f"Error: {e}")
-            raise
-
-    def add_indicators(self, data, indicator_set='default'):
-        """
-        Add technical indicators to the dataset using native pandas calculations
-        where possible to avoid dependency issues.
-        """
-        if indicator_set == 'default':
-            # RSI calculation
-            delta = data['Close'].diff()
-            gain = (delta.where(delta > 0, 0)).rolling(window=15).mean()
-            loss = (-delta.where(delta < 0, 0)).rolling(window=15).mean()
-            rs = gain / loss
-            data['RSI'] = 100 - (100 / (1 + rs))
-
-            # EMA calculations
-            data['EMAF'] = data['Close'].ewm(span=20, adjust=False).mean()
-
-            # Historical Volatility
-            data['hist_volatility'] = data['Adj Close'].pct_change().rolling(window=20).std() * np.sqrt(252)
-
-            # Bollinger Bands
-            rolling_mean = data['Close'].rolling(window=20).mean()
-            rolling_std = data['Close'].rolling(window=20).std()
-            data['BBL_20_2.0'] = rolling_mean - (2 * rolling_std)
-            data['BBM_20_2.0'] = rolling_mean
-            data['BBU_20_2.0'] = rolling_mean + (2 * rolling_std)
-            data['BB_width'] = (data['BBU_20_2.0'] - data['BBL_20_2.0']) / data['BBM_20_2.0']
-
-            # MACD
-            exp1 = data['Close'].ewm(span=12, adjust=False).mean()
-            exp2 = data['Close'].ewm(span=26, adjust=False).mean()
-            data['MACD'] = exp1 - exp2
-            data['Signal'] = data['MACD'].ewm(span=9, adjust=False).mean()
-
-            # ATR
-            high_low = data['High'] - data['Low']
-            high_close = abs(data['High'] - data['Close'].shift())
-            low_close = abs(data['Low'] - data['Close'].shift())
-            ranges = pd.concat([high_low, high_close, low_close], axis=1)
-            true_range = ranges.max(axis=1)
-            data['ATR'] = true_range.rolling(14).mean()
-
-            # OBV
-            data['OBV'] = (np.sign(data['Close'].diff()) * data['Volume']).fillna(0).cumsum()
-
-        elif indicator_set == 'alternative':
-            data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()
-            # VWAP calculation requires intraday data, removed for daily timeframe
-
-        else:
-            raise ValueError("Invalid indicator set. Use 'default' or 'alternative'.")
-
-        return data
     
     def prepare_target(self, data):
         data['Target'] = data['Adj Close'].shift(-1)
@@ -184,11 +119,9 @@ class StockPredictor:
         self.model = model
         return model, history
     
-    def train(self, TICKER, START_DATE='2014-08-01', END_DATE='2024-08-01'):
+    def train(self):
         # Main training pipeline
-        data = self.get_ticker_data(TICKER, START_DATE, END_DATE)
-        data = self.add_indicators(data)
-        data = self.prepare_target(data)
+        data = self.prepare_target(self.data.copy())
         data = self.clean_data(data)
         data_set_scaled, scaler = self.scale_data(data)
         
@@ -206,14 +139,12 @@ class StockPredictor:
         model, history = self.create_and_train_lstm(X_train, y_train)
         return model, history, X_test, y_test
 
-    def predict(self, TICKER, START_DATE, END_DATE):
+    def predict(self, data):
         if self.model is None:
             raise ValueError("Model not trained. Please train the model first.")
             
         # Use the same data preparation pipeline as training
-        data = self.get_ticker_data(TICKER, START_DATE, END_DATE)
-        data = self.add_indicators(data)
-        data = self.prepare_target(data)
+        data = self.prepare_target(data.copy())
         data = self.clean_data(data)
         data_set_scaled, _ = self.scale_data(data, save_scaler=False)
         

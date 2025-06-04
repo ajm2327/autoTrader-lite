@@ -1,0 +1,386 @@
+{
+  "simulations": [
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:20.141338",
+      "performance": {
+        "total_decisions": 0,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:20.144970",
+      "performance": {
+        "total_decisions": 1,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:20.859120",
+      "performance": {
+        "total_decisions": 2,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:21.526950",
+      "performance": {
+        "total_decisions": 3,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:22.013924",
+      "performance": {
+        "total_decisions": 4,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:22.556845",
+      "performance": {
+        "total_decisions": 5,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:22.966715",
+      "performance": {
+        "total_decisions": 6,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:24.461528",
+      "performance": {
+        "total_decisions": 7,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:24.925324",
+      "performance": {
+        "total_decisions": 8,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:25.880288",
+      "performance": {
+        "total_decisions": 9,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:26.524646",
+      "performance": {
+        "total_decisions": 10,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:26.853575",
+      "performance": {
+        "total_decisions": 11,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:27.344738",
+      "performance": {
+        "total_decisions": 12,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:27.824065",
+      "performance": {
+        "total_decisions": 13,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:28.352177",
+      "performance": {
+        "total_decisions": 14,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:28.740173",
+      "performance": {
+        "total_decisions": 15,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "AMD_20250604_165017",
+      "ticker": "AMD",
+      "date_range": "2025-03-01 to 2025-04-17",
+      "timestamp": "2025-06-04 16:52:31.723615",
+      "performance": {
+        "total_decisions": 16,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/AMD_20250604_165017_trades.json",
+        "decisions": "simulation_logs/AMD_20250604_165017_decisions.json",
+        "summary": "simulation_logs/AMD_20250604_165017_summary.json"
+      },
+      "key_decisions": []
+    }
+  ],
+  "meta": {
+    "created_at": "2025-06-04 16:52:20.141157",
+    "last_updated": "2025-06-04 16:52:31.723634",
+    "total_simulations": 17,
+    "total_trades": 0,
+    "overall_win_rate": 0,
+    "overall_profit": 0
+  }
+}

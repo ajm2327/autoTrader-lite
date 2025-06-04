@@ -16,6 +16,7 @@ from langgraph.prebuilt import ToolNode
 
 from data_util import get_alpaca_data, add_indicators
 from alpaca_clients import llm, get_llm_with_tools, get_tool_node
+from lstm import StockPredictor
 
 
 from decision_utils import (
@@ -36,8 +37,7 @@ class HistoricalDataSimulator:
     """
     Enhanced historical data simulator with price change tracking and persistent logging
     """
-    def __init__(self, ticker, start_date, end_date, interval_seconds=30, timescale="Minute", log_dir="simulation_logs", ross_entry_time=None, ross_entry_price=None,
-             ross_exit_time=None, ross_exit_price=None, start_near_ross_entry=False):
+    def __init__(self, ticker, start_date, end_date, interval_seconds=30, timescale="Minute", log_dir="simulation_logs"):
         """
         Initialize the historical data simulation
         
@@ -61,12 +61,6 @@ class HistoricalDataSimulator:
         self.chunk_size = 10
         self.log_dir = log_dir
         self.sim_id = f"{ticker}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
-
-        self.ross_entry_time = ross_entry_time
-        self.ross_entry_price = ross_entry_price
-        self.ross_exit_time = ross_exit_time
-        self.ross_exit_price = ross_exit_price
-        self.start_near_ross_entry = start_near_ross_entry
         
         # Create log directory if it doesn't exist
         os.makedirs(log_dir, exist_ok=True)
@@ -87,11 +81,15 @@ class HistoricalDataSimulator:
     def initialize(self):
         """Load historical data and prepare simulation"""
         try:
-            print(f"📂 Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
+            print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
+            
+            #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
+            lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=365*10)).strftime('%Y-%m-%d')
+            
             # Get full historical data
             self.data = get_alpaca_data(
                 ticker = self.ticker,
-                start_date = self.start_date,
+                start_date = lstm_start_date,
                 end_date = self.end_date,
                 timescale = self.timescale
             )
@@ -103,6 +101,16 @@ class HistoricalDataSimulator:
             # Add indicators using full historical data
             self.data = add_indicators(data=self.data, indicator_set='alternate')
             print(f"✅ Loaded {len(self.data)} total data points")
+            
+            # INITIALIZE LSTM
+            print("Initializing and training LSTM...")
+            self.predictor = StockPredictor(data = self.data)
+            self.predictor.train()
+            print("LSTM initialized and trained successfully")
+            
+            # Separate training data from data period just for gemini
+            sim_data = self.data[self.data.index >= pd.Timestamp(self.start_date)]
+            self.data = sim_data
             
             # Identify the last day's data
             # Convert all dates to string format to avoid timezone issues
@@ -121,33 +129,8 @@ class HistoricalDataSimulator:
             
             # Find indices for the last day's data
             last_day_indices = [i for i, mask_val in enumerate(last_day_mask) if mask_val]
-            # Inside the initialize method, after finding last_day_indices:
-            # Check if we need to start near Ross's entry time
-            if self.start_near_ross_entry and self.ross_entry_time:
-                # Convert ross_entry_time to pd.Timestamp if it's a string
-                if isinstance(self.ross_entry_time, str):
-                    self.ross_entry_time = pd.Timestamp(self.ross_entry_time)
-                    
-                # Start 15 minutes before Ross's entry
-                target_time = self.ross_entry_time - pd.Timedelta(minutes=15)
-                
-                # Find the closest index to the target time
-                closest_idx = None
-                min_diff = float('inf')
-                
-                for idx in last_day_indices:
-                    time_diff = abs((self.data.index[idx] - target_time).total_seconds())
-                    if time_diff < min_diff:
-                        min_diff = time_diff
-                        closest_idx = idx
-                
-                if closest_idx is not None:
-                    self.current_index = closest_idx
-                    print(f"⏱️ Starting simulation at {self.data.index[closest_idx]} "
-                          f"(~15 minutes before Ross's entry)")
-                else:
-                    # Fallback to default
-                    self.current_index = last_day_indices[0]
+            # Inside the initialize method, after finding last_day_indices:    
+            self.current_index = last_day_indices[0]
 
             
             if not last_day_indices:
@@ -155,10 +138,7 @@ class HistoricalDataSimulator:
                 return False
                 
             print(f"⏱️ Last day data points: {len(last_day_indices)}")
-            
-            # Set current index to start of last day
-            self.current_index = last_day_indices[0]
-            
+                        
             
             # Initialize empty log files
             self._initialize_log_files()
@@ -178,114 +158,6 @@ class HistoricalDataSimulator:
         with open(self.decision_log_file, 'w') as f:
             json.dump([], f)
         print(f"📝 Log files initialized at {self.log_dir}")
-
-    # Add this to your HistoricalDataSimulator class
-    def evaluate_micropullback(self, ross_entry_time=None, ross_entry_price=None, 
-                              ross_exit_time=None, ross_exit_price=None):
-        """
-        Evaluates if current data shows a micropullback pattern and compares to Ross's trade if provided.
-        
-        Args:
-            ross_entry_time: Optional timestamp when Ross entered the trade
-            ross_entry_price: Optional price at which Ross entered
-            ross_exit_time: Optional timestamp when Ross exited the trade
-            ross_exit_price: Optional price at which Ross exited
-        """
-        # Get recent candles (at least 3)
-        recent_idx = max(0, self.current_index - 5)
-        recent_candles = self.data.iloc[recent_idx:self.current_index].copy()
-        
-        if len(recent_candles) < 3:
-            return False, "Not enough candles for evaluation"
-        
-        # Check pattern criteria from the PDF
-        strong_momentum = False
-        small_pullback = False
-        volume_increase = False
-        
-        # Calculate price change over last 3 candles (momentum)
-        price_change_pct = ((recent_candles.iloc[-1]['Close'] - recent_candles.iloc[-3]['Close']) 
-                           / recent_candles.iloc[-3]['Close']) * 100
-        strong_momentum = price_change_pct > 1.0  # >1% increase
-        
-        # Check for pullback candle (red candle or lower wick)
-        if len(recent_candles) >= 2:
-            small_pullback = (recent_candles.iloc[-2]['Close'] < recent_candles.iloc[-2]['Open'] or 
-                             recent_candles.iloc[-2]['Low'] < recent_candles.iloc[-3]['Low'])
-        
-        # Check volume increase
-        if len(recent_candles) >= 2:
-            volume_increase = recent_candles.iloc[-1]['Volume'] > recent_candles.iloc[-2]['Volume'] * 1.2
-        
-        # Current price and time
-        current_time = self.data.index[min(self.current_index-1, len(self.data)-1)]
-        current_price = self.data.iloc[min(self.current_index-1, len(self.data)-1)]['Close']
-        
-        # Print evaluation information in terminal
-        print("\n🔍 MICROPULLBACK EVALUATION:")
-        print(f"Time: {current_time}")
-        print(f"Price: ${current_price:.2f}")
-        print(f"Momentum (>1% increase): {'✅' if strong_momentum else '❌'} ({price_change_pct:.2f}%)")
-        print(f"Small pullback: {'✅' if small_pullback else '❌'}")
-        print(f"Volume increase: {'✅' if volume_increase else '❌'}")
-        
-        # Compare to Ross's trade if provided
-        if ross_entry_time and ross_entry_price:
-            time_diff_entry = abs((current_time - ross_entry_time).total_seconds())
-            time_diff_minutes_entry = time_diff_entry / 60
-            price_diff_entry = abs(current_price - ross_entry_price) / ross_entry_price * 100
-            
-            print("\n📊 COMPARISON TO ROSS'S ENTRY:")
-            print(f"Ross entered at: {ross_entry_time}, Price: ${ross_entry_price:.2f}")
-            print(f"Current time: {current_time}, Price: ${current_price:.2f}")
-            print(f"Time difference: {time_diff_minutes_entry:.1f} minutes")
-            print(f"Price difference: {price_diff_entry:.2f}%")
-        
-        # Compare to Ross's exit if provided
-        if ross_exit_time and ross_exit_price:
-            time_diff_exit = abs((current_time - ross_exit_time).total_seconds())
-            time_diff_minutes_exit = time_diff_exit / 60
-            price_diff_exit = abs(current_price - ross_exit_price) / ross_exit_price * 100
-            
-            print("\n📊 COMPARISON TO ROSS'S EXIT:")
-            print(f"Ross exited at: {ross_exit_time}, Price: ${ross_exit_price:.2f}")
-            print(f"Current time: {current_time}, Price: ${current_price:.2f}")
-            print(f"Time difference: {time_diff_minutes_exit:.1f} minutes")
-            print(f"Price difference: {price_diff_exit:.2f}%")
-            
-        # Compare Ross's trade performance with current simulation state
-        if ross_entry_price and ross_exit_price and self.entry_price:
-            ross_pnl_pct = ((ross_exit_price - ross_entry_price) / ross_entry_price) * 100
-            
-            # If Gemini has exited, compare complete trades
-            if len(self.trades) > 0:
-                latest_trade = self.trades[-1]
-                gemini_pnl_pct = latest_trade["pnl_pct"]
-                
-                print("\n💰 TRADE PERFORMANCE COMPARISON:")
-                print(f"Ross P&L: {ross_pnl_pct:.2f}%")
-                print(f"Gemini P&L: {gemini_pnl_pct:.2f}%")
-                print(f"Performance difference: {abs(gemini_pnl_pct - ross_pnl_pct):.2f}%")
-            # If Gemini is still in a trade, compare unrealized P&L
-            elif self.in_position:
-                current_pnl_pct = ((current_price - self.entry_price) / self.entry_price) * 100
-                
-                print("\n💰 TRADE PERFORMANCE COMPARISON (Gemini still in trade):")
-                print(f"Ross P&L: {ross_pnl_pct:.2f}%")
-                print(f"Gemini current P&L: {current_pnl_pct:.2f}% (unrealized)")
-        
-        # Overall pattern detection
-        is_micropullback = strong_momentum and small_pullback and volume_increase
-        print(f"\n📈 MICROPULLBACK PATTERN: {'✅ DETECTED' if is_micropullback else '❌ NOT DETECTED'}")
-        
-        return is_micropullback, {
-            "time": current_time,
-            "price": current_price,
-            "momentum": strong_momentum,
-            "pullback": small_pullback,
-            "volume": volume_increase
-        }
-    
     
     def sim_get_rvol(self):
         """
@@ -316,6 +188,26 @@ class HistoricalDataSimulator:
                 return current_vol / avg_vol
                 
         return 1.0  # Default to 1.0 if we can't calculate
+    
+    def get_lstm_prediction(self):
+        """Get lstm prediction for current market state"""
+        if not hasattr(self, 'predictor') or self.predictor.model is None:
+            return None
+        
+        try:
+            recent_data = self.data.iloc[max(0, self.current_index - self.predictor.backcandles):self.current_index]
+
+            if len(recent_data) < self.predictor.backcandles:
+                return None
+            
+            predictions = self.predictor.predict(recent_data)
+
+            return predictions[-1] if len(predictions) > 0 else None
+        
+        except Exception as e:
+            print(f"Error getting LSTM prediction: {str(e)}")
+            return None
+
     
     def get_day_open_price(self):
         """Get the opening price for the current day"""
@@ -415,11 +307,16 @@ What is your trading decision?
         # Determine if price is up or down 
         change_direction = "up" if change_pct and change_pct > 0 else "down"
 
+        lstm_prediction = self.get_lstm_prediction()
+        prediction_text = f"- LSTM Prediction: ${lstm_prediction:.2f}" if lstm_prediction else "- LSTM Prediction: N/A"
+
+
         # Format update message without leading spaces
         update_message = f"""
 [Data Update] {self.ticker} at {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}:
 - Current price: ${current_price:.2f}
 - {self.ticker} is {change_direction} {abs(change_pct):.2f}% today (from ${f"{open_price:.2f}" if open_price is not None else 'N/A'} to ${current_price:.2f})
+{prediction_text}
 - Recent activity:
 {next_chunk[['Open', 'High', 'Low', 'Close', 'Volume']]}
 
@@ -429,6 +326,7 @@ Indicators:
 - Signal Line: {next_chunk.iloc[-1]['Signal_Line']:.4f}
 - SMA_20: ${next_chunk.iloc[-1]['SMA_20']:.2f}
 - SMA_50: ${next_chunk.iloc[-1]['SMA_50']:.2f}
+- VWAP: ${next_chunk.iloc[-1]['VWAP']:.2f}
 - RVOL: {rvol:.2f}
 
 Based on this data, what is your next decision?
@@ -851,15 +749,7 @@ def data_node(state):
             print("=" * 50)
             print("Simulation complete!")
             return state | {"finished": True}
-            
-        if simulator and simulator.current_index % 5 == 0:  # Check every 5 data points
-            # Get Ross's trade details from simulator
-            simulator.evaluate_micropullback(
-                ross_entry_time=simulator.ross_entry_time,
-                ross_entry_price=simulator.ross_entry_price,
-                ross_exit_time=simulator.ross_exit_time,
-                ross_exit_price=simulator.ross_exit_price
-            )
+
         return state | {"messages": [next_message]}
     except Exception as e:
         print(f"❌ Error getting next update: {str(e)}")
