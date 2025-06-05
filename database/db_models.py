@@ -4,6 +4,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from datetime import datetime
 import uuid
+import json
 
 from .config import Base
 
@@ -66,23 +67,29 @@ class TechnicalIndicators(Base):
 class ModelVersions(Base):
     __tablename__ = 'model_versions'
 
-    model_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    model_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     version = Column(String(50), nullable=False)
     created_at = Column(DateTime(timezone=True), default = func.current_timestamp())
-    parameters = Column(JSONB, nullable=False)
-    metrics = Column(JSONB)
+    parameters = Column(Text, nullable=False)
+    metrics = Column(Text)
     is_active = Column(Boolean, default=True)
 
     # relationship for predictions
     predictions = relationship("Predictions", back_populates = 'model')
+
+    def set_parameters(self, params_dict):
+        self.parameters = json.dumps(params_dict)
+
+    def get_parameters(self):
+        return json.loads(self.parameters) if self.parameters else {}
 
     def __reper__(self):
         return f"<ModelVersions(version='{self.versions}', created_at='{self.created_at}', is_active={self.is_active})>"
     
 class Predictions(Base):
     __tablename__ = 'predictions'
-    prediction_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    model_id = Column(UUID(as_uuid=True), ForeignKey('model_versions.model_id'), nullable=False)
+    prediction_id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    model_id = Column(String(36), ForeignKey('model_versions.model_id'), nullable=False)
     ticker = Column(String(10), nullable=False)
     prediction_date = Column(DateTime(timezone=True), default=func.current_timestamp())
     target_date = Column(DateTime(timezone=True), nullable=False)

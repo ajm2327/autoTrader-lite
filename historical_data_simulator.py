@@ -602,6 +602,11 @@ Based on this data, what is your next decision?
         df = add_indicators(df, indicator_set='alternate',
                             store_in_db = True, ticker=self.ticker)
         return df
+    
+    def _fetch_and_store_all_data(self, session, start_date, end_date):
+        df = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
+        df = add_indicators(df, indicator_set='alternate', store_in_db=True, ticker=self.ticker)
+        return df
 
 
 class PersistentLogger:

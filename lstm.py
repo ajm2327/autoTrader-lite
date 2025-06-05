@@ -304,18 +304,18 @@ class StockPredictor:
         with db_config.get_db_session() as session:
             model_version = ModelVersions(
                 version = self.version,
-                parameters={
+                parameters=json.dumps({
                     'backcandles': self.backcandles,
                     'lstm_units': self.lstm_units,
                     'feature_columns': self.feature_columns,
                     'ticker': self.ticker
-                },
-                metrics = self.training_metadata,
+                }),
+                metrics = json.drumps(self.training_metadata),
                 is_active = True
             )
 
             session.query(ModelVersions).filter(
-                ModelVersions.paramters['ticker'].astext == self.ticker
+                ModelVersions.parameters.like(f'%"ticker": "{self.ticker}"%')
             ).update({'is_active': False})
 
             session.add(model_version)

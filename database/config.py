@@ -30,16 +30,17 @@ class DatabaseConfig:
         self.SessionLocal = None
     
     def get_database_url(self):
-        return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        #return f"postgresql://{self.DB_USER}:{self.DB_PASSWORD}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return "sqlite:///./autotrader_lite.db"
 
     def init_db(self):
         try:
             self.engine = create_engine(
                 self.get_database_url(),
-                poolclass = QueuePool,
-                pool_size = self.POOL_SIZE,
-                max_overflow = self.MAX_OVERFLOW,
-                pool_timeout = self.POOL_TIMEOUT,
+                #poolclass = QueuePool,
+                #pool_size = self.POOL_SIZE,
+                #max_overflow = self.MAX_OVERFLOW,
+                #pool_timeout = self.POOL_TIMEOUT,
                 echo = False
             )
 
