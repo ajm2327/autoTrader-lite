@@ -29,14 +29,18 @@ class StockPredictor:
         self.scaler = None
 
     
-    def prepare_target(self, data):
-        data['Target'] = data['Adj Close'].shift(-1)
+    def prepare_target(self, data, chunk_size=5):
+        #data['Target'] = data['Adj Close'].shift(-1)
+        for i in range(1, chunk_size + 1):
+            data[f'Target_{i}'] = data['Adj Close'].shift(-i)
         return data
 
     def clean_data(self, data, columns_to_drop=['Volume', 'Close', 'Date']):
         data.dropna(inplace=True)
         data.reset_index(inplace=True)
-        data.drop(columns_to_drop, axis=1, inplace=True)
+        actual_columns_to_drop = [col for col in columns_to_drop if col in data.columns]
+        if actual_columns_to_drop:
+            data.drop(actual_columns_to_drop, axis=1, inplace=True)
         return data
     
     def scale_data(self, data, feature_range=(0,1), save_scaler=True, scaler_path='scaler.pkl'):
@@ -49,7 +53,7 @@ class StockPredictor:
         self.scaler = scaler
         return data_scaled, scaler
     
-    def prepare_lstm_data(self, data_set_scaled, backcandles=30, target_column=-1, feature_columns=None):
+    def prepare_lstm_data(self, data_set_scaled, backcandles=30, target_column=None, feature_columns=None):
 
         """
         Prepare data for LSTM model by creating sequences of historical data.
@@ -75,21 +79,15 @@ class StockPredictor:
         #Extract target values
         y = data_set_scaled[backcandles:, target_column]
 
-        return np.array(X), np.array(y).reshape(-1,1)
+        return np.array(X), y
     
-    def create_and_train_lstm(self, X_train, y_train):
+    def create_and_train_lstm(self, X_train, y_train, chunk_size=5):
         """
         Creates and trains lstm model
 
         Args:
         X_train(np.ndarray): Training input data with shape (samples, backcandles, features)
         y_train(np.ndarray): training target data
-        backcandles(int): Number of time steps to look back (default = 30)
-        features(int): Number of input features (default = 9)
-        lstm_units(int): Number of units in LSTM layer (default = 150)
-        batch_size(int): Batch size for training (default = 15)
-        epochs(int): Number of epochs for training (default = 30)
-        validation_split(float): fraction of training data to use for validation (default = 0.1)
 
         Returns:
         keras.Model: trained LSTM keras model
@@ -99,7 +97,7 @@ class StockPredictor:
         lstm_input = layers.Input(shape=(self.backcandles, len(self.feature_columns)), name='lstm_input')
         inputs = layers.LSTM(self.lstm_units, name='first_layer')(lstm_input)
         inputs = layers.Dense(128)(inputs)
-        inputs = layers.Dense(1, name='dense_layer')(inputs)
+        inputs = layers.Dense(chunk_size, name='dense_layer')(inputs)
         output = layers.Activation('linear', name='output')(inputs)
         model = models.Model(inputs=lstm_input, outputs=output)
 
@@ -145,12 +143,12 @@ class StockPredictor:
         model, history = self.create_and_train_lstm(X_train, y_train)
         return model, history, X_test, y_test
 
-    def predict(self, data):
+    def predict(self, data, chunk_size=5):
         if self.model is None:
             raise ValueError("Model not trained. Please train the model first.")
             
         # Use the same data preparation pipeline as training
-        data = self.prepare_target(data.copy())
+        data = self.prepare_target(data.copy(), chunk_size)
         data = self.clean_data(data)
         data_set_scaled, _ = self.scale_data(data, save_scaler=False)
         
@@ -163,24 +161,36 @@ class StockPredictor:
         
         predictions_scaled = self.model.predict(X)
         
-        # Inverse transform predictions
-        dummy = np.zeros((len(predictions_scaled), self.scaler.n_features_in_))
-        dummy[:, self.target_column] = predictions_scaled.flatten()
-        predictions = self.scaler.inverse_transform(dummy)[:, self.target_column]
+        predictions = []
+        for i in range(len(predictions_scaled)):
+            sample_preds = []
+            for j in range(chunk_size):
+                # Inverse transform predictions
+                dummy = np.zeros((1, self.scaler.n_features_in_))
+                dummy[0, self.target_column] = predictions_scaled[i,j]
+                predict = self.scaler.inverse_transform(dummy)[0, self.target_column]
+                sample_preds.append(predict)
+            predictions.append(sample_preds)
         
         
         self.last_predictions = predictions
-        self.last_actual = y #store actual values
+        self.last_actual = y
         self.last_X = X
         self.last_y = y
 
         return predictions
     
     def predict_next(self, recent_data):
-        if len(recent_data) < self.backcandles+ 1:
+        """Predict just next timestep"""
+        chunk_predictions = self.predict_next_chunk(recent_data, chunk_size=1)
+        return chunk_predictions[0]
+    
+    def predict_next_chunk(self, recent_data, chunk_size=5):
+        """Predict next chunk of prices"""
+        if len(recent_data) < self.backcandles + 1:
             raise ValueError(f"Need {self.backcandles + 1} candles, got {len(recent_data)}")
         
-        data = self.prepare_target(recent_data.copy())
+        data = recent_data.copy()
         data = self.clean_data(data)
         if len(data) < self.backcandles:
             raise ValueError(f"Not enough data after cleaning: {len(data)}")
@@ -189,17 +199,48 @@ class StockPredictor:
         data_numeric = data[numeric_columns]
         data_scaled = self.scaler.transform(data_numeric)
 
-        # Create single sequence
-        X = data_scaled[:self.backcandles,self.feature_columns]
+        X = data_scaled[-self.backcandles:, self.feature_columns]
         X = X.reshape(1, self.backcandles, len(self.feature_columns))
 
-        prediction_scaled = self.model.predict(X)
+        predictions_scaled = self.model.predict(X)
 
-        dummy = np.zeros((1, self.scaler.n_features_in_))
-        dummy[0, self.target_column] = prediction_scaled[0,0]
-        prediction = self.scaler.inverse_transform(dummy)[0, self.target_column]
+        predictions = []
 
-        return prediction
+        for i in range(chunk_size):
+            dummy = np.zeros((1, self.scaler.n_features_in_))
+            dummy[0, self.target_column] = predictions_scaled[0, i]
+            pred = self.scaler.inverse_transform(dummy)[0, self.target_column]
+            predictions.append(pred)
+
+        return predictions
+    
+    def predict_next_chunk_metrics(self, recent_data, chunk_size=5):
+        """Predict useful trading metrics for next chunk"""
+        try:
+            predictions = self.predict_next_chunk(recent_data, chunk_size)
+            current_price = recent_data['Adj Close'].iloc[-1]
+
+            if not predictions:
+                return None
+            
+            return {
+                'raw_predictions': predictions,
+                'current_price': current_price,
+                'mean_price': np.mean(predictions),
+                'max_price': np.max(predictions),
+                'min_price': np.min(predictions),
+                'final_price': predictions[-1],
+                'direction': 'UP' if predictions[-1] > current_price else 'DOWN',
+                'price_change_pct': ((predictions[-1] - current_price) / current_price) * 100,
+                'volatility': np.std(predictions),
+                'trend_strength': (predictions[-1] - predictions[0]) / predictions[0] * 100 if predictions[0] != 0 else 0,
+                'momentum': 'INCREASING' if len(predictions) > 2 and predictions[-1] > predictions[len(predictions)//2] else 'DECREASING'
+            }
+        except Exception as e:
+            print(f'Error in predict_chunk_metrics: {str(e)}')
+            return None
+    
+
 
     def save_model(self, path='models_saved/'):
         if self.model is None:

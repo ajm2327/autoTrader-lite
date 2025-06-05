@@ -214,7 +214,7 @@ class HistoricalDataSimulator:
                 print(f" LSTM: Not enough data for prediction, ({len(recent_data)}/{needed_rows})")
                 return None
             
-            predictions = self.predictor.predict_next(recent_data.iloc[-needed_rows:])
+            predictions = self.predictor.predict_next_chunk_metrics(recent_data.iloc[-needed_rows:], chunk_size=self.chunk_size)
 
             return predictions
         
@@ -265,7 +265,14 @@ class HistoricalDataSimulator:
         change_pct, open_price = self.calculate_price_change(current_price)
 
         lstm_prediction = self.get_lstm_prediction()
-        prediction_text = f"- LSTM Prediction: ${lstm_prediction:.2f}" if lstm_prediction else "- LSTM Prediction: N/A"
+        if lstm_prediction:
+            prediction_text = f"""- LSTM Predictions (next {self.chunk_size} min):
+Raw Predictions: {lstm_prediction['raw_predictions']}
+Direction: {lstm_prediction['direction']} ({lstm_prediction['price_change_pct']:.2f}%)
+Range: ${lstm_prediction['min_price']:.2f} - ${lstm_prediction['max_price']:.2f}
+Mean: ${lstm_prediction['mean_price']:.2f}"""
+        else:
+            prediction_text = '- LSTM Prediction: N/A'
         
         # Format initial message without leading spaces
         message = f"""
@@ -276,7 +283,10 @@ Initial historical data summary:
 - Current price: ${current_price:.2f}
 - Day's open: ${f"{open_price:.2f}" if open_price is not None else 'N/A'}
 - Price change: {change_pct:.2f}% today (from day's open)
+{'='*60}
 {prediction_text}
+{'='*60}
+
 - Recent activity:
 {initial_chunk.tail(5)[['Open', 'High', 'Low', 'Close', 'Volume']]}
 
@@ -326,15 +336,23 @@ What is your trading decision?
         change_direction = "up" if change_pct and change_pct > 0 else "down"
 
         lstm_prediction = self.get_lstm_prediction()
-        prediction_text = f"- LSTM Prediction: ${lstm_prediction:.2f}" if lstm_prediction else "- LSTM Prediction: N/A"
-
+        if lstm_prediction:
+            prediction_text = f"""- LSTM Predictions (next {self.chunk_size} min):
+            Direction: {lstm_prediction['direction']} ({lstm_prediction['price_change_pct']:.2f}%)
+            Range: ${lstm_prediction['min_price']:.2f} - ${lstm_prediction['max_price']:.2f}
+            Mean: ${lstm_prediction['mean_price']:.2f}"""
+        else:
+            prediction_text = '- LSTM Prediction: N/A'
 
         # Format update message without leading spaces
         update_message = f"""
 [Data Update] {self.ticker} at {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}:
 - Current price: ${current_price:.2f}
 - {self.ticker} is {change_direction} {abs(change_pct):.2f}% today (from ${f"{open_price:.2f}" if open_price is not None else 'N/A'} to ${current_price:.2f})
+{'='*60}
 {prediction_text}
+{'='*60}
+
 - Recent activity:
 {next_chunk[['Open', 'High', 'Low', 'Close', 'Volume']]}
 
@@ -350,9 +368,13 @@ Indicators:
 Based on this data, what is your next decision?
 """
         print("\n🔄 DATA UPDATE SENT TO AGENT:")
-        print(f"Time: {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}")
-        print(f"Price: ${current_price:.2f} ({change_direction} {abs(change_pct):.2f}%)")
-        print(f"RVOL: {rvol:.2f}")
+        print(f'{'='*60}')
+        #print(f"Time: {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}")
+        #print(f"Price: ${current_price:.2f} ({change_direction} {abs(change_pct):.2f}%)")
+        #print(f"RVOL: {rvol:.2f}")
+        print(f'{update_message}')
+        print(f'{'='*60}')
+
         
         return HumanMessage(content=update_message)
 
@@ -699,7 +721,7 @@ def data_node(state):
         print("=" * 50)
         
         simulator = HistoricalDataSimulator(ticker, start_date, end_date, 
-                                           interval_seconds=30, 
+                                           interval_seconds=5, 
                                            log_dir=log_dir)
         state["simulator"] = simulator
 
