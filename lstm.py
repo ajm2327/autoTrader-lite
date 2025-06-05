@@ -19,7 +19,7 @@ class StockPredictor:
         self.backcandles = 20
         self.target_column = -1
         # Features: Open, High, Low, vwap, Adj Close, SMA_20, SMA_50, SMA_200, RSI, MACD, Signal_Line, Middle_Band, Upper_Band, Lower_Band, EMA
-        self.feature_columns = [0,1,2,4,5,6,7,8,9,10,11,12,13,14,15]
+        self.feature_columns = None#[0,1,2,4,5,6,7,8,9,10,11,12,13,14,15]
         self.lstm_units = 100
         self.batch_size = 12
         self.epochs = 50
@@ -126,6 +126,9 @@ class StockPredictor:
         # Main training pipeline
         data = self.prepare_target(self.data.copy())
         data = self.clean_data(data)
+        feature_names = [col for col in data.columns if col != 'Target']
+        self.feature_columns = list(range(len(feature_names)))
+
         data_set_scaled, scaler = self.scale_data(data)
         
         X, y = self.prepare_lstm_data(
@@ -208,7 +211,7 @@ class StockPredictor:
         try:
             if version is None:
                 #Load latest version
-                ticker_models = [d for d in os.listdir(path) if d.startswith(f'{self.ticker}_v')]
+                ticker_models = [d for d in os.listdir(path) if d.startswith(f'{self.ticker}v')]
                 if not ticker_models:
                     raise ValueError("No models found for {self.ticker}")
                 version_path = os.path.join(path, sorted(ticker_models)[-1])
@@ -233,6 +236,12 @@ class StockPredictor:
             with open(metadata_path, 'r') as f:
                 self.training_metadata = json.load(f)
             self.version = self.training_metadata['version']
+
+            if 'model_params' in self.training_metadata:
+                params = self.training_metadata['model_params']
+                self.backcandles = params.get('backcandles', self.backcandles)
+                self.lstm_units = params.get('lstm_units', self.lstm_units)
+                self.feature_columns = params.get('feature_columns', self.feature_columns)
 
             return self.training_metadata
         except Exception as e:

@@ -4,6 +4,7 @@ import time
 import traceback
 import json
 import os
+import sys
 
 from typing import Annotated, Literal
 from typing_extensions import TypedDict
@@ -799,6 +800,20 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
     Returns:
         The final state of the simulation
     """
+    class TeeOutput:
+        def __init__(self, file_path):
+            self.file = open(file_path, 'w')
+            self.stdout = sys.stdout
+        def write(self, data):
+            self.stdout.write(data)
+            self.file.write(data)
+            self.file.flush()
+        def flush(self):
+            self.stdout.flush()
+            self.file.flush()
+
+    sys.stdout = TeeOutput('live_trading.log')
+
     print(f"\n{'='*60}")
     print(f"🚀 STARTING HISTORICAL TRADING SIMULATION FOR {ticker}")
     print(f"{'='*60}")
