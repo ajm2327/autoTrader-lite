@@ -127,9 +127,22 @@ class StockPredictor:
         data = self.prepare_target(self.data.copy(), chunk_size)
         data = self.clean_data(data)
         feature_names = [col for col in data.columns if not col.startswith('Target')]
-        self.feature_columns = list(range(len(feature_names)))
+        target_names = [col for col in data.columns if col.startswith('Target')]
 
-        data_set_scaled, scaler = self.scale_data(data)
+        feature_data = data[feature_names]
+        target_data = data[target_names]
+
+        feature_data_scaled, scaler = self.scale_data(feature_data)
+        self.scaler = scaler
+
+        #scale targets separately
+        target_scaler = MinMaxScaler(feature_range=(0,1))
+        target_data_scaled = target_scaler.fit_transform(target_data)
+        self.target_scaler = target_scaler
+
+        data_set_scaled = np.hstack([feature_data_scaled, target_data_scaled])
+
+        self.feature_columns = list(range(len(feature_names)))
         
         X, y = self.prepare_lstm_data(
             data_set_scaled, 
@@ -198,25 +211,19 @@ class StockPredictor:
         if len(data) < self.backcandles:
             raise ValueError(f"Not enough data after cleaning: {len(data)}")
         
-        numeric_columns = data.select_dtypes(include=[np.number]).columns
-        data_numeric = data[numeric_columns]
-        data_scaled = self.scaler.transform(data_numeric)
+        feature_names = [col for col in data.columns if not col.startswith('Target')]
+        feature_data = data[feature_names]
+        data_scaled = self.scaler.transform(feature_data)
+        
 
         X = data_scaled[-self.backcandles:, self.feature_columns]
         X = X.reshape(1, self.backcandles, len(self.feature_columns))
 
         predictions_scaled = self.model.predict(X)
 
-        predictions = []
+        predictions = self.target_scaler.inverse_transform(predictions_scaled.reshape(1,-1))[0]
 
-        for i in range(chunk_size):
-            dummy = np.zeros((1, self.scaler.n_features_in_))
-            target_col_idx = len(self.feature_columns) + i
-            dummy[0, target_col_idx] = predictions_scaled[0, i]
-            pred = self.scaler.inverse_transform(dummy)[0, target_col_idx]
-            predictions.append(pred)
-
-        return predictions
+        return predictions.tolist()
     
     def predict_next_chunk_metrics(self, recent_data, chunk_size=5):
         """Predict useful trading metrics for next chunk"""
