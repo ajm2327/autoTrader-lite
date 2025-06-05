@@ -53,7 +53,7 @@ class StockPredictor:
         self.scaler = scaler
         return data_scaled, scaler
     
-    def prepare_lstm_data(self, data_set_scaled, backcandles=30, target_column=None, feature_columns=None):
+    def prepare_lstm_data(self, data_set_scaled, backcandles=30, chunk_size=5, feature_columns=None):
 
         """
         Prepare data for LSTM model by creating sequences of historical data.
@@ -61,7 +61,7 @@ class StockPredictor:
         Args:
         data_set_scaled (np.array): Scaled input data
         backcandles (int): Number of historical time steps to use for each sample
-        target_column (int): Index of the target column (-1 for last column)
+        chunk size: NUmber of target values to predict
         feature_columns (list): Number of columns to use as features (N)
 
         Returns:
@@ -77,7 +77,8 @@ class StockPredictor:
         #Move axis from 0 to position 2
         X = np.moveaxis(X, [0], [2])
         #Extract target values
-        y = data_set_scaled[backcandles:, target_column]
+        target_start_idx = data_set_scaled.shape[1] - chunk_size
+        y = data_set_scaled[backcandles:, target_start_idx:]
 
         return np.array(X), y
     
@@ -122,17 +123,18 @@ class StockPredictor:
     
     def train(self):
         # Main training pipeline
-        data = self.prepare_target(self.data.copy())
+        chunk_size = 5
+        data = self.prepare_target(self.data.copy(), chunk_size)
         data = self.clean_data(data)
-        feature_names = [col for col in data.columns if col != 'Target']
+        feature_names = [col for col in data.columns if not col.startswith('Target')]
         self.feature_columns = list(range(len(feature_names)))
 
         data_set_scaled, scaler = self.scale_data(data)
         
         X, y = self.prepare_lstm_data(
             data_set_scaled, 
-            self.backcandles, 
-            self.target_column, 
+            self.backcandles,
+            chunk_size, 
             self.feature_columns
         )
         
@@ -140,7 +142,7 @@ class StockPredictor:
         X_train, X_test = X[:splitlimit], X[splitlimit:]
         y_train, y_test = y[:splitlimit], y[splitlimit:]
         
-        model, history = self.create_and_train_lstm(X_train, y_train)
+        model, history = self.create_and_train_lstm(X_train, y_train, chunk_size)
         return model, history, X_test, y_test
 
     def predict(self, data, chunk_size=5):
@@ -155,7 +157,7 @@ class StockPredictor:
         X, y = self.prepare_lstm_data(
             data_set_scaled, 
             self.backcandles, 
-            self.target_column, 
+            chunk_size,
             self.feature_columns
         )
         
@@ -167,8 +169,9 @@ class StockPredictor:
             for j in range(chunk_size):
                 # Inverse transform predictions
                 dummy = np.zeros((1, self.scaler.n_features_in_))
-                dummy[0, self.target_column] = predictions_scaled[i,j]
-                predict = self.scaler.inverse_transform(dummy)[0, self.target_column]
+                target_col_idx = len(self.feature_columns) + j
+                dummy[0, target_col_idx] = predictions_scaled[i,j]
+                predict = self.scaler.inverse_transform(dummy)[0, target_col_idx]
                 sample_preds.append(predict)
             predictions.append(sample_preds)
         
@@ -208,8 +211,9 @@ class StockPredictor:
 
         for i in range(chunk_size):
             dummy = np.zeros((1, self.scaler.n_features_in_))
-            dummy[0, self.target_column] = predictions_scaled[0, i]
-            pred = self.scaler.inverse_transform(dummy)[0, self.target_column]
+            target_col_idx = len(self.feature_columns) + i
+            dummy[0, target_col_idx] = predictions_scaled[0, i]
+            pred = self.scaler.inverse_transform(dummy)[0, target_col_idx]
             predictions.append(pred)
 
         return predictions
