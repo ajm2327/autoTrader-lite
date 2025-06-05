@@ -84,7 +84,7 @@ class HistoricalDataSimulator:
             print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
             
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
-            lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=365*10)).strftime('%Y-%m-%d')
+            lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=365*2)).strftime('%Y-%m-%d')
             
             # Get full historical data
             self.data = get_alpaca_data(
@@ -104,12 +104,20 @@ class HistoricalDataSimulator:
             
             # INITIALIZE LSTM
             print("Initializing and training LSTM...")
-            self.predictor = StockPredictor(data = self.data)
-            self.predictor.train()
-            print("LSTM initialized and trained successfully")
+            self.predictor = StockPredictor(data = self.data, ticker=self.ticker)
+            
+            try:
+                metadata = self.predictor.load_model()
+                print(f"✅ Loaded existing LSTM model: {metadata['version']}")
+            except (ValueError, FileNotFoundError) as e:
+                print(f" No existing model found, training new LSTM...")
+                self.predictor.train()
+                saved_path = self.predictor.save_model()
+                print(f"✅ New LSTM model saved to {saved_path}")
+            print("LSTM initialized successfully")
             
             # Separate training data from data period just for gemini
-            sim_data = self.data[self.data.index >= pd.Timestamp(self.start_date)]
+            sim_data = self.data[self.data.index >= pd.Timestamp(self.start_date, tz='UTC')]
             self.data = sim_data
             
             # Identify the last day's data
@@ -197,7 +205,10 @@ class HistoricalDataSimulator:
         try:
             recent_data = self.data.iloc[max(0, self.current_index - self.predictor.backcandles):self.current_index]
 
+            print(f"Getting LSTM prediction, current_index= {self.current_index}, recent_data length= {len(recent_data)}")
+
             if len(recent_data) < self.predictor.backcandles:
+                print(f" LSTM: Not enough data for prediction, ({len(recent_data)}/{self.predictor.backcandles})")
                 return None
             
             predictions = self.predictor.predict(recent_data)
@@ -249,6 +260,9 @@ class HistoricalDataSimulator:
         rvol = self.sim_get_rvol()
         current_price = initial_chunk.iloc[-1]['Close']
         change_pct, open_price = self.calculate_price_change(current_price)
+
+        lstm_prediction = self.get_lstm_prediction()
+        prediction_text = f"- LSTM Prediction: ${lstm_prediction:.2f}" if lstm_prediction else "- LSTM Prediction: N/A"
         
         # Format initial message without leading spaces
         message = f"""
@@ -259,6 +273,7 @@ Initial historical data summary:
 - Current price: ${current_price:.2f}
 - Day's open: ${f"{open_price:.2f}" if open_price is not None else 'N/A'}
 - Price change: {change_pct:.2f}% today (from day's open)
+{prediction_text}
 - Recent activity:
 {initial_chunk.tail(5)[['Open', 'High', 'Low', 'Close', 'Volume']]}
 
@@ -326,7 +341,7 @@ Indicators:
 - Signal Line: {next_chunk.iloc[-1]['Signal_Line']:.4f}
 - SMA_20: ${next_chunk.iloc[-1]['SMA_20']:.2f}
 - SMA_50: ${next_chunk.iloc[-1]['SMA_50']:.2f}
-- VWAP: ${next_chunk.iloc[-1]['VWAP']:.2f}
+- VWAP: ${next_chunk.iloc[-1]['vwap']:.2f}
 - RVOL: {rvol:.2f}
 
 Based on this data, what is your next decision?
@@ -352,8 +367,11 @@ Based on this data, what is your next decision?
         
         # Update log file
         try:
-            with open(self.decision_log_file, 'r') as f:
-                decisions = json.load(f)
+            try:
+                with open(self.decision_log_file, 'r') as f:
+                    decisions = json.load(f)
+            except FileNotFoundError:
+                decisions = []
             decisions.append(decision)
             with open(self.decision_log_file, 'w') as f:
                 json.dump(decisions, f, indent=2)
@@ -374,8 +392,11 @@ Based on this data, what is your next decision?
         
         # Update log file
         try:
-            with open(self.trade_log_file, 'r') as f:
-                trades = json.load(f)
+            try:
+                with open(self.trade_log_file, 'r') as f:
+                    trades = json.load(f)
+            except FileNotFoundError:
+                trades = []
             trades.append(trade_log)
             with open(self.trade_log_file, 'w') as f:
                 json.dump(trades, f, indent=2)

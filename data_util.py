@@ -186,9 +186,6 @@ def add_indicators(data, indicator_set='default'):
         # Add EMA
         data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()
     
-        # VWAP calculation
-        data['VWAP'] = (data['Close'] * data['Volume']).cumsum() / data['Volume'].cumsum()
-
     else:
         raise ValueError("Invalid indicator set. Use 'default' or 'alternate'.")
 

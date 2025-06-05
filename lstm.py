@@ -10,18 +10,21 @@ import json
 from datetime import datetime
 
 class StockPredictor:
-    def __init__(self, data):
+    def __init__(self, data, ticker=None):
         #Default parameters
         self.version = "1.0.0"
+        self.ticker = ticker
+        self.data = data
         self.training_metadata = {}
         self.backcandles = 20
         self.target_column = -1
-        self.feature_columns = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+        # Features: Open, High, Low, Adj Close, SMA_20, SMA_50, SMA_200, RSI, MACD, Signal_Line, Middle_Band, Upper_Band, Lower_Band, EMA, VWAP
+        self.feature_columns = [0,1,2,4,5,6,7,8,9,10,11,12,13,14,15]
         self.lstm_units = 100
         self.batch_size = 12
-        self.epochs = 300
+        self.epochs = 50
         self.validation_split = 0.1
-        self.patience = 15
+        self.patience = 5
         self.model = None
         self.scaler = None
 
@@ -62,10 +65,10 @@ class StockPredictor:
         """
 
         X = []
-        for j in feature_columns:
+        for idx, j in enumerate(feature_columns):
             X.append([])
             for i in range(backcandles, data_set_scaled.shape[0]):
-                X[j].append(data_set_scaled[i-backcandles:i, j])
+                X[idx].append(data_set_scaled[i-backcandles:i, j])
 
         #Move axis from 0 to position 2
         X = np.moveaxis(X, [0], [2])
@@ -176,7 +179,7 @@ class StockPredictor:
         
         #create version specific filename
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        version_path = f"{path}v{self.version}_{timestamp}/"
+        version_path = f"{path}{self.ticker}v{self.version}_{timestamp}/"
 
         #create directory if it doesn't exist
         os.makedirs(version_path, exist_ok = True)
@@ -205,10 +208,10 @@ class StockPredictor:
         try:
             if version is None:
                 #Load latest version
-                versions = sorted(os.listdir(path))
-                if not versions:
-                    raise ValueError("No models found")
-                version_path = os.path.join(path, versions[-1])
+                ticker_models = [d for d in os.listdir(path) if d.startswith(f'{self.ticker}_v')]
+                if not ticker_models:
+                    raise ValueError("No models found for {self.ticker}")
+                version_path = os.path.join(path, sorted(ticker_models)[-1])
             else:
                 #load specific version
                 matching_dirs = [d for d in os.listdir(path) if d.startswith(f'v{version}_')]
