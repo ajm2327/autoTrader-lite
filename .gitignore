@@ -2,6 +2,7 @@
 myenv/
 simulation_logs/
 models_saved/
+best_model.keras
 # Python cache files
 __pycache__/
 *.py[cod]
