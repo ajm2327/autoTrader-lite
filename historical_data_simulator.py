@@ -204,17 +204,19 @@ class HistoricalDataSimulator:
             return None
         
         try:
-            recent_data = self.data.iloc[max(0, self.current_index - self.predictor.backcandles):self.current_index]
+            needed_rows = self.predictor.backcandles + 1
+            start_idx = max(0, self.current_index - needed_rows)
+            recent_data = self.data.iloc[start_idx:self.current_index]
 
             print(f"Getting LSTM prediction, current_index= {self.current_index}, recent_data length= {len(recent_data)}")
 
-            if len(recent_data) < self.predictor.backcandles:
-                print(f" LSTM: Not enough data for prediction, ({len(recent_data)}/{self.predictor.backcandles})")
+            if len(recent_data) < needed_rows:
+                print(f" LSTM: Not enough data for prediction, ({len(recent_data)}/{needed_rows})")
                 return None
             
-            predictions = self.predictor.predict(recent_data)
+            predictions = self.predictor.predict_next(recent_data.iloc[-needed_rows:])
 
-            return predictions[-1] if len(predictions) > 0 else None
+            return predictions
         
         except Exception as e:
             print(f"Error getting LSTM prediction: {str(e)}")

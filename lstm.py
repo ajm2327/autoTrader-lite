@@ -175,6 +175,31 @@ class StockPredictor:
         self.last_y = y
 
         return predictions
+    
+    def predict_next(self, recent_data):
+        if len(recent_data) < self.backcandles+ 1:
+            raise ValueError(f"Need {self.backcandles + 1} candles, got {len(recent_data)}")
+        
+        data = self.prepare_target(recent_data.copy())
+        data = self.clean_data(data)
+        if len(data) < self.backcandles:
+            raise ValueError(f"Not enough data after cleaning: {len(data)}")
+        
+        numeric_columns = data.select_dtypes(include=[np.number]).columns
+        data_numeric = data[numeric_columns]
+        data_scaled = self.scaler.transform(data_numeric)
+
+        # Create single sequence
+        X = data_scaled[:self.backcandles,self.feature_columns]
+        X = X.reshape(1, self.backcandles, len(self.feature_columns))
+
+        prediction_scaled = self.model.predict(X)
+
+        dummy = np.zeros((1, self.scaler.n_features_in_))
+        dummy[0, self.target_column] = prediction_scaled[0,0]
+        prediction = self.scaler.inverse_transform(dummy)[0, self.target_column]
+
+        return prediction
 
     def save_model(self, path='models_saved/'):
         if self.model is None:
