@@ -4,17 +4,11 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
 import logging
-from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from dotenv import load_dotenv
 
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-db = SQLAlchemy()
-migrate = Migrate()
-
 
 Base = declarative_base()
 
@@ -49,7 +43,7 @@ class DatabaseConfig:
                 echo = False
             )
 
-            self.SessionLocal = sessionMaker(
+            self.SessionLocal = sessionmaker(
                 autocommit = False,
                 autoflush = False,
                 bind = self.engine
@@ -74,16 +68,6 @@ class DatabaseConfig:
             raise
         finally:
             session.close()
-
-    def init_app(self, app):
-        """Initialize app"""
-        app.config['SQLALCHEMY_DATABASE_URI'] = self.get_database_url()
-        app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-        
-        db.init_app(app)
-        migrate.init_app(app, db)
-
-        self.init_db()
 
 db_config = DatabaseConfig()
 

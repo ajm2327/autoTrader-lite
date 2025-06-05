@@ -9,6 +9,11 @@ import os
 import json
 from datetime import datetime
 
+from database import (
+    db_config, HistoricalData, TechnicalIndicators, 
+    ModelVersions, Predictions, DatabaseQueries, init_database
+)
+
 class StockPredictor:
     def __init__(self, data, ticker=None):
         #Default parameters
@@ -234,6 +239,20 @@ class StockPredictor:
             if not predictions:
                 return None
             
+            if hasattr(self, 'model_id') and self.model_id:
+                with db_config.get_db_session() as session:
+                    predictions_data = []
+                    for i, pred_price in enumerate(predictions):
+                        predictions_data.append({
+                            'target_date': datetime.now() + timedelta(minutes=i+1),
+                            'predicted_value': pred_price,
+                            'confidence_score': None
+                        })
+
+                    DatabaseQueries.store_predictions(
+                        session, self.model_id, self.ticker, predictions_data
+                    )
+            
             return {
                 'raw_predictions': predictions,
                 'current_price': current_price,
@@ -282,6 +301,28 @@ class StockPredictor:
         with open(f"{version_path}metadata.json", 'w') as f:
             json.dump(self.training_metadata, f)
 
+        with db_config.get_db_session() as session:
+            model_version = ModelVersions(
+                version = self.version,
+                parameters={
+                    'backcandles': self.backcandles,
+                    'lstm_units': self.lstm_units,
+                    'feature_columns': self.feature_columns,
+                    'ticker': self.ticker
+                },
+                metrics = self.training_metadata,
+                is_active = True
+            )
+
+            session.query(ModelVersions).filter(
+                ModelVersions.paramters['ticker'].astext == self.ticker
+            ).update({'is_active': False})
+
+            session.add(model_version)
+            session.flush()
+
+            self.model_id = model_version.model_id
+        
         return version_path
 
     def load_model(self, version=None, path='models_saved/'):

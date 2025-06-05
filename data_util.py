@@ -11,6 +11,11 @@ import requests
 from bs4 import BeautifulSoup
 from config import ALPACA_API_KEY, ALPACA_API_SECRET
 
+from database import (
+    db_config, HistoricalData, TechnicalIndicators, 
+    ModelVersions, Predictions, DatabaseQueries, init_database
+)
+
 
 
 # DEBUGGING GET ALPACA DATA FUNCTION:
@@ -103,7 +108,7 @@ def parse_percentage(val):
         return None
 
 # ADD INDICATOR FUNCTION FOR HISTORICAL DATA RETRIEVAL: 
-def add_indicators(data, indicator_set='default'):
+def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None):
     """
     Add technical indicators to the dataset using native pandas calculations
     where possible to avoid dependency issues.
@@ -189,9 +194,12 @@ def add_indicators(data, indicator_set='default'):
     else:
         raise ValueError("Invalid indicator set. Use 'default' or 'alternate'.")
 
+    if store_in_db and ticker:
+        _update_indicators_in_database(ticker, data)
+    
     return data
 
-def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Day"):
+def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Day", store_in_db = True):
     """
     Retrieve historical stock data from Alpaca API with debugging.
     """
@@ -258,6 +266,9 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
         print(f"DataFrame columns: {df.columns.tolist()}")
         print(f"Date range in data: {df.index.min()} to {df.index.max()}")
 
+        if store_in_db and df is not None and not df.empty:
+            _store_dataframe_in_database(ticker, df)
+        
         return df
 
     except Exception as e:
@@ -265,3 +276,46 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
         import traceback
         traceback.print_exc()
         return None
+    
+
+def _store_dataframe_in_database(ticker, df):
+    """Store df in db"""
+    with db_config.get_db_session() as session:
+        for timestamp, row in df.iterrows():
+            historical_data = HistoricalData(
+                ticker = ticker,
+                timestamp = timestamp,
+                date = timestamp.date(),
+                open=row['Open'],
+                high=row['High'],
+                low=row['Low'],
+                close=row['Close'],
+                adjusted_close=row['Adj Close'],
+                volume=row['Volume'],
+                vwap = row.get('vwap')
+            )
+            session.add(historical_data)
+
+def _update_indicators_in_database(ticker, df):
+    with db_config.get_db_session() as session:
+        for timestamp, row in df.iterrows():
+            historical_record = session.query(HistoricalData).filter(
+                HistoricalData.ticker == ticker,
+                HistoricalData.timestamp == timestamp
+            ).first()
+
+            if historical_record:
+                # update or create indicators
+                indicators = TechnicalIndicators(
+                    data_id = historical_record.data_id,
+                    sma_20 = row.get('SMA_20'),
+                    sma_50 = row.get('SMA_50'),
+                    rsi = row.get('RSI'),
+                    macd = row.get('MACD'),
+                    signal_line=row.get('Signal_Line'),
+                    middle_band = row.get('Middle_Band'),
+                    upper_band = row.get('Upper_Band'),
+                    lower_band = row.get('Lower_Band'),
+                    ema = row.get('EMA')
+                )
+                session.add(indicators)

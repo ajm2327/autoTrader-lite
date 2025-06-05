@@ -34,6 +34,12 @@ from decision_tools import (
     get_rvol, get_price_change, get_current_quote, get_company_overview,
     get_float_info, get_detailed_stock_data, real_check_news
 )
+
+from database import (
+    db_config, HistoricalData, TechnicalIndicators,
+    ModelVersions, Predictions, DatabaseQueries, init_database
+)
+
 class HistoricalDataSimulator:
     """
     Enhanced historical data simulator with price change tracking and persistent logging
@@ -88,19 +94,15 @@ class HistoricalDataSimulator:
             lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=365*2)).strftime('%Y-%m-%d')
             
             # Get full historical data
-            self.data = get_alpaca_data(
-                ticker = self.ticker,
-                start_date = lstm_start_date,
-                end_date = self.end_date,
-                timescale = self.timescale
-            )
+            #self.data = get_alpaca_data(ticker = self.ticker,start_date = lstm_start_date,end_date = self.end_date,timescale = self.timescale)
+            self.data = self._load_or_fetch_data(lstm_start_date, self.end_date)
 
             if self.data is None or self.data.empty:
                 print(f"❌ Could not retrieve historical data for {self.ticker}")
                 return False
 
             # Add indicators using full historical data
-            self.data = add_indicators(data=self.data, indicator_set='alternate')
+            #self.data = add_indicators(data=self.data, indicator_set='alternate')
             print(f"✅ Loaded {len(self.data)} total data points")
             
             # INITIALIZE LSTM
@@ -159,6 +161,36 @@ class HistoricalDataSimulator:
             print(f"❌ Error initializing historical data: {str(e)}")
             traceback.print_exc()
             return False
+    
+    def _load_or_fetch_data(self, start_date, end_date):
+        """Either loads data from database or fetches from api, updates db"""
+
+        init_database()
+        with db_config.get_db_session() as session:
+            existing_data = DatabaseQueries.get_data_with_indicators(
+                session, self.ticker, start_date, end_date
+            )
+
+            if existing_data:
+                df_data = self._db_records_to_dataframe(existing_data)
+
+                #check for gaps
+                date_range = pd.date_range(start=start_date, end=end_date, freq='1min')
+                missing_dates = self._find_missing_dates(df_data, date_range)
+
+                if missing_dates:
+                    print(f"Found {len(missing_dates)} missing data points, fetching from API...")
+                    self._fetch_and_store_missing_data(session, missing_dates)
+
+                    existing_data = DatabaseQueries.get_data_with_indicators(
+                        session, self.ticker, start_date, end_date
+                    )
+                    df_data = self._db_records_to_dataframe(existing_data)
+                return df_data
+            else:
+                # No data in db , fetch all data
+                print(f"No data in batabase for {self.ticker}, fetching from API...")
+                return self._fetch_and_store_all_data(session, start_date, end_date)
     
     def _initialize_log_files(self):
         """Initialize empty log files"""
@@ -518,6 +550,58 @@ Based on this data, what is your next decision?
             print(f"Error saving summary: {str(e)}")
         
         return summary
+    
+    # DATABASE HELPER METHODS
+    def _db_records_to_dataframe(self, db_records):
+        """Convert database records to pd df"""
+        data = []
+        for record in db_records:
+            row = {
+                'Open': float(record.open),
+                'High': float(record.high),
+                'Low': float(record.low),
+                'Close': float(record.close),
+                'Adj Close': float(record.adjusted_close or record.close),
+                'Volume': int(record.volume),
+                'vwap': float(record.vwap) if record.vwap else None,
+            }
+
+            if record.indicators:
+                indicator = record.indicators[0]
+                row.update({
+                    'SMA_20': float(indicator.sma_20) if indicator.sma_20 else None,
+                    'SMA_50': float(indicator.sma_50) if indicator.sma_50 else None,
+                    'RSI': float(indicator.rsi) if indicator.rsi else None,
+                    'MACD': float(indicator.macd) if indicator.macd else None,
+                    'Signal_Line': float(indicator.signal_line) if indicator.signal_line else None,
+                    'Middle_Band': float(indicator.middle_band) if indicator.middle_band else None,
+                    'Upper_Band': float(indicator.upper_band) if indicator.upper_band else None,
+                    'Lower_Band': float(indicator.lower_band) if indicator.lower_band else None,
+                    'EMA': float(indicator.ema) if indicator.ema else None,
+                    'EMAF': float(indicator.emaf) if indicator.emaf else None,
+                    'Hist_Volatility': float(indicator.hist_volatility) if indicator.hist_volatilty else None,
+                    'BB_Width': float(indicator.bb_width) if indicator.bb_width else None,
+                    'ATR': float(indicator.atr) if indicator.atr else None,
+                    'OBV': float(indicator.obv) if indicator.obv else None
+                })
+
+            data.append(row)
+
+        df = pd.DataFrame(data, index=[r.timestamp for r in db_records])
+        return df
+    
+    def _find_missing_dates(self, existing_df, expected_date_range):
+        """Find missing dates in data"""
+        existing_dates = set(existing_df.index)
+        expected_dates = set(expected_date_range)
+        return list(expected_dates - existing_dates)
+    
+    def _fetch_and_store_missing_data(self, session, start_date, end_date):
+        """Fetch all data from api and store in db"""
+        df = get_alpaca_data(self.ticker, start_date, end_date, timecale=self.timescale, store_in_db=True)
+        df = add_indicators(df, indicator_set='alternate',
+                            store_in_db = True, ticker=self.ticker)
+        return df
 
 
 class PersistentLogger:
