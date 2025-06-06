@@ -91,7 +91,7 @@ class HistoricalDataSimulator:
             print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
             
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
-            lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=365*2)).strftime('%Y-%m-%d')
+            lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')#timedelta(days=365*2)).strftime('%Y-%m-%d')
             
             # Get full historical data
             #self.data = get_alpaca_data(ticker = self.ticker,start_date = lstm_start_date,end_date = self.end_date,timescale = self.timescale)

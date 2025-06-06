@@ -286,6 +286,7 @@ class StockPredictor:
         #Save model and associated files
         self.model.save(f"{version_path}lstm_model.keras")
         joblib.dump(self.scaler, f"{version_path}scaler.pkl")
+        joblib.dump(self.target_scaler, f"{version_path}target_scaler.pkl")
 
         #save metadata
         self.training_metadata.update({
@@ -310,7 +311,7 @@ class StockPredictor:
                     'feature_columns': self.feature_columns,
                     'ticker': self.ticker
                 }),
-                metrics = json.drumps(self.training_metadata),
+                metrics = json.dumps(self.training_metadata),
                 is_active = True
             )
 
@@ -345,10 +346,12 @@ class StockPredictor:
             
             model_path = os.path.join(version_path, 'lstm_model.keras')
             scaler_path = os.path.join(version_path, "scaler.pkl")
+            target_scaler_path = os.path.join(version_path, "target_scaler.pkl")
             metadata_path = os.path.join(version_path, "metadata.json")
 
             self.model = models.load_model(model_path)
             self.scaler = joblib.load(scaler_path)
+            self.target_scaler = joblib.load(target_scaler_path)
 
             #load metadata
             with open(metadata_path, 'r') as f:

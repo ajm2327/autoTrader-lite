@@ -22,6 +22,7 @@ class HistoricalData(Base):
     close = Column(DECIMAL(12,4), nullable = False)
     adjusted_close = Column(DECIMAL(12,4))
     volume = Column(BigInteger, nullable = False)
+    vwap = Column(DECIMAL(12,4))
     last_updated = Column(DateTime(timezone=True), default=func.current_timestamp())
 
     indicators = relationship("TechnicalIndicators", back_populates='historical_data', cascade='all, delete-orphan')
@@ -50,10 +51,10 @@ class TechnicalIndicators(Base):
 
     ema = Column(DECIMAL(12, 4))
     emaf = Column(DECIMAL(12,4))
-    hist_volatility = Column(DECIMAL(10,6))
-    bb_width = Column(DECIMAL(10,6))
-    atr = Column(DECIMAL(12,6))
-    obv = Column(BigInteger)
+    #hist_volatility = Column(DECIMAL(10,6))
+    #bb_width = Column(DECIMAL(10,6))
+    #atr = Column(DECIMAL(12,6))
+    #obv = Column(BigInteger)
 
 
     calculated_at = Column(DateTime(timezone=True), default=func.current_timestamp())

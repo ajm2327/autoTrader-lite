@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS technical_indicators (
     lower_band DECIMAL(12,4),
     ema DECIMAL(12,4),
     emaf DECIMAL(12,4),
-    hist_volatility DECIMAL(10,6),
-    bb_width DECIMAL(10,6),
-    atr DECIMAL(12,6),
-    obv INTEGER,
+    --hist_volatility DECIMAL(10,6),
+    --bb_width DECIMAL(10,6),
+    --atr DECIMAL(12,6),
+    --obv INTEGER,
     
     calculated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(data_id) REFERENCES historical_data(data_id)
