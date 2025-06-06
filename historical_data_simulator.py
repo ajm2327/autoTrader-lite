@@ -15,7 +15,7 @@ from langgraph.graph.message import add_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
 
-from data_util import get_alpaca_data, add_indicators
+from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database
 from alpaca_clients import llm, get_llm_with_tools, get_tool_node
 from lstm import StockPredictor
 
@@ -90,6 +90,9 @@ class HistoricalDataSimulator:
         try:
             print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
             
+            init_database()
+            
+            check_database_status(self.ticker, self.start_date, self.end_date)
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
             lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')#timedelta(days=365*2)).strftime('%Y-%m-%d')
             
@@ -168,13 +171,17 @@ class HistoricalDataSimulator:
     def _load_or_fetch_data(self, start_date, end_date):
         """Either loads data from database or fetches from api, updates db"""
 
-        init_database()
+        print(f"\n📊 DATA LOADING for {self.ticker}...")
+        print(f"    Checking database for existing data from {start_date} to {end_date}...")
+
         with db_config.get_db_session() as session:
+            print(f"    🔎 Checking Database...")
             existing_data = DatabaseQueries.get_data_with_indicators(
                 session, self.ticker, start_date, end_date
             )
 
             if existing_data:
+                print(f"    ✅ Found {len(existing_data)} records in database")
                 df_data = self._db_records_to_dataframe(existing_data)
 
                 #check for gaps
@@ -192,7 +199,7 @@ class HistoricalDataSimulator:
                 return df_data
             else:
                 # No data in db , fetch all data
-                print(f"No data in batabase for {self.ticker}, fetching from API...")
+                print(f"    ❌ No data in batabase for {self.ticker}, fetching from API...")
                 return self._fetch_and_store_all_data(session, start_date, end_date)
     
     def _initialize_log_files(self):
@@ -603,8 +610,14 @@ Based on this data, what is your next decision?
         return df
     
     def _fetch_and_store_all_data(self, session, start_date, end_date):
+        print(f"    📂 No Data in DB - fetching from Alpaca API...")
         df = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
-        df = add_indicators(df, indicator_set='alternate', store_in_db=True, ticker=self.ticker)
+        if df is not None and not df.empty:
+            print(f"    🗃️Storing {len(df)} records to database...")
+            self._store_dataframe_in_database(self.ticker, df)
+
+            df = add_indicators(df, indicator_set='alternate', store_in_db=True, ticker=self.ticker)
+            self._update_indicators_in_database(self.ticker, df)
         return df
 
 

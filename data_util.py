@@ -204,6 +204,13 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
     Retrieve historical stock data from Alpaca API with debugging.
     """
 
+    api_call_text = """\n ALPCA API CALL:
+    Ticker: {ticker}
+    Period: {start_date} to {end_date}
+    Timescale: {timescale}
+    Store in DB: {store_in_db}"""
+    print(api_call_text)
+
     try:
         # Convert date strings to datetime
         start = datetime.strptime(start_date, '%Y-%m-%d')
@@ -267,6 +274,7 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
         print(f"Date range in data: {df.index.min()} to {df.index.max()}")
 
         if store_in_db and df is not None and not df.empty:
+            print(f"    📂 DIRECT STORAGE FROM GET_ALPACA_DATA, Storing {len(df)} records to database...")
             _store_dataframe_in_database(ticker, df)
         
         return df
@@ -319,3 +327,25 @@ def _update_indicators_in_database(ticker, df):
                     ema = row.get('EMA')
                 )
                 session.add(indicators)
+
+
+def check_database_status(ticker, start_date, end_date):
+    """Check and report db status"""
+    with db_config.get_db_session() as session:
+        total_records = session.query(HistoricalData).filter(
+            HistoricalData.ticker == ticker
+        ).count()
+
+    period_records = session.query(HistoricalData).filter(
+        HistoricalData.ticker == ticker,
+        HistoricalData.date >= start_date,
+        HistoricalData.date <= end_date
+    ).count()
+
+    print(f"\n📊 DATABASE STATUS:")
+    print(f"    Total {ticker} records: {total_records}")
+    print(f"    Records in simulation period: {period_records}")
+
+    if total_records > 0:
+        latest = DatabaseQueries.get_latest_data_point(session, ticker)
+        print(f"    Latest Data Point: {latest.timestamp}")
