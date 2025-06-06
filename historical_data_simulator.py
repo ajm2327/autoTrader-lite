@@ -1,6 +1,6 @@
 import pandas as pd
-from datetime import datetime, timedelta
-import time
+from datetime import datetime, timedelta, time
+import time as time_module
 import traceback
 import json
 import os
@@ -100,8 +100,9 @@ class HistoricalDataSimulator:
             eastern = pytz.timezone('US/Eastern')
 
             if target_date.date() == datetime.now().date():
-                current_time = datetime.now(eastern)
-                if current_time.time() < datetime.time(9,30):
+                current_time = eastern.localize(datetime.now())
+                print(f"current_time type: {type(current_time)}, value: {current_time}")
+                if current_time.time() < time(9,30):
                     print("❌ Market hasn't opened yet today")
                     return False
                 end_time = current_time
@@ -141,7 +142,9 @@ class HistoricalDataSimulator:
 
             # Separate training data from data period just for gemini
             if self.data.index.tz is None:
-                target_start = target_start.tz_localize(None)
+                target_start = target_start.replace(tzinfo=None)
+            else:
+                target_start = pd.Timestamp(target_start).tz_convert(self.data.index.tz).to_pydatetime()
             sim_data = self.data[self.data.index >= target_start]
             self.data = sim_data
             
@@ -399,7 +402,7 @@ What is your trading decision?
             next_chunk = self.data.iloc[-chunk_size:]
 
             self.current_index = len(self.data)
-            time.sleep(60)
+            time_module.sleep(60)
         
         else:
             self.is_replay = True
@@ -414,7 +417,7 @@ What is your trading decision?
 
             # For visualization purposes, slow down the simulation
             if self.interval_seconds > 0:
-                time.sleep(self.interval_seconds)
+                time_module.sleep(self.interval_seconds)
             
         # Calculate metrics
         rvol = self.sim_get_rvol()
