@@ -204,7 +204,7 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
     Retrieve historical stock data from Alpaca API with debugging.
     """
 
-    api_call_text = """\n ALPCA API CALL:
+    api_call_text = f"""\n ALPCA API CALL:
     Ticker: {ticker}
     Period: {start_date} to {end_date}
     Timescale: {timescale}

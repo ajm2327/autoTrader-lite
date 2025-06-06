@@ -91,7 +91,7 @@ class HistoricalDataSimulator:
             print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
             
             init_database()
-            
+
             check_database_status(self.ticker, self.start_date, self.end_date)
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
             lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')#timedelta(days=365*2)).strftime('%Y-%m-%d')
@@ -614,10 +614,10 @@ Based on this data, what is your next decision?
         df = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
         if df is not None and not df.empty:
             print(f"    🗃️Storing {len(df)} records to database...")
-            self._store_dataframe_in_database(self.ticker, df)
+            _store_dataframe_in_database(self.ticker, df)
 
             df = add_indicators(df, indicator_set='alternate', store_in_db=True, ticker=self.ticker)
-            self._update_indicators_in_database(self.ticker, df)
+            _update_indicators_in_database(self.ticker, df)
         return df
 
 
