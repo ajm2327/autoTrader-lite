@@ -5,6 +5,7 @@ import traceback
 import json
 import os
 import sys
+import pytz
 
 from typing import Annotated, Literal
 from typing_extensions import TypedDict
@@ -15,7 +16,7 @@ from langgraph.graph.message import add_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
 
-from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database
+from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database, get_current_quote, get_stock_price
 from alpaca_clients import llm, get_llm_with_tools, get_tool_node
 from lstm import StockPredictor
 
@@ -23,10 +24,8 @@ from lstm import StockPredictor
 from decision_utils import (
     DecisionState,          
     maybe_route_to_tools,  
-    gemini_decision_node,    
-    mock_trade_manager,      
-    setup_custom_mock_news,
-    mock_check_news, mock_place_market_BUY, mock_place_market_SELL, mock_get_position             
+    gemini_decision_node
+
 )
 
 from decision_tools import (
@@ -96,6 +95,20 @@ class HistoricalDataSimulator:
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
             lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')#timedelta(days=365*2)).strftime('%Y-%m-%d')
             
+            target_date = datetime.strptime(self.end_date, '%Y-%m-%d')
+            eastern = pytz.timezone('US/Eastern')
+
+            if target_date.date() == datetime.now().date():
+                current_time = datetime.now(eastern)
+                if current_time.time() < datetime.time(9,30):
+                    print("❌ Market hasn't opened yet today")
+                    return False
+                end_time = current_time
+                self.is_live_day = True
+            else:
+                end_time = eastern.localize(target_date.replace(hour=16, minute=0,second=0))
+                self.is_live_day = False
+
             # Get full historical data
             #self.data = get_alpaca_data(ticker = self.ticker,start_date = lstm_start_date,end_date = self.end_date,timescale = self.timescale)
             self.data = self._load_or_fetch_data(lstm_start_date, self.end_date)
@@ -122,40 +135,30 @@ class HistoricalDataSimulator:
                 print(f"✅ New LSTM model saved to {saved_path}")
             print("LSTM initialized successfully")
             
+            target_start = eastern.localize(target_date.replace(hour=9,minute=30,second=0))
+
+
             # Separate training data from data period just for gemini
-            start_ts = pd.Timestamp(self.start_date)
-            if self.data.index.tz is not None:
-                start_ts = start_ts.tz_localize('UTC')
-            sim_data = self.data[self.data.index >= start_ts]
+            if self.data.index.tz is None:
+                target_start = target_start.tz_localize(None)
+            sim_data = self.data[self.data.index >= target_start]
             self.data = sim_data
             
+            if self.data.empty:
+                print(f"❌ No Data found for target date {self.end_date}")
+                return False
+            
+            self.current_index = 0
+            self.realtime_cache=[]
+
+            print(f"📅 Simulation starting at market open: {self.data.index[0]}")
+            print(f"    Data points available: {len(self.data)}")
+            print(f"    ⌚ Live day: {self.is_live_day}")
             # Identify the last day's data
             # Convert all dates to string format to avoid timezone issues
             dates_as_strings = [str(d.date()) for d in self.data.index]
             unique_dates = sorted(set(dates_as_strings))
-            
-            if not unique_dates:
-                print(f"❌ No valid dates found in data")
-                return False
-                
-            last_day_str = unique_dates[-1]
-            print(f"📅 Last day identified: {last_day_str}")
-            
-            # Create mask for the last day
-            last_day_mask = [str(d.date()) == last_day_str for d in self.data.index]
-            
-            # Find indices for the last day's data
-            last_day_indices = [i for i, mask_val in enumerate(last_day_mask) if mask_val]
-            # Inside the initialize method, after finding last_day_indices:    
-            self.current_index = last_day_indices[0]
-
-            
-            if not last_day_indices:
-                print(f"❌ No data points found for the last day")
-                return False
-                
-            print(f"⏱️ Last day data points: {len(last_day_indices)}")
-                        
+                                    
             
             # Initialize empty log files
             self._initialize_log_files()
@@ -167,6 +170,13 @@ class HistoricalDataSimulator:
             print(f"❌ Error initializing historical data: {str(e)}")
             traceback.print_exc()
             return False
+    
+    def _cache_realtime_data(self, new_data_point):
+        """Cache realtime data and write to DB"""
+        self.realtime_cache.append(new_data_point)
+        if len(self.realtime_cache) % 10 == 0:
+            self._batch_write_to_db()
+
     
     def _load_or_fetch_data(self, start_date, end_date):
         """Either loads data from database or fetches from api, updates db"""
@@ -349,6 +359,12 @@ What is your trading decision?
         return HumanMessage(content=message)
 
     def get_next_update(self):
+        if self.current_index >= len(self.data):
+            return self._get_realtime_update()
+        else:
+            return self._get_historical_update(is_replay=True)
+    
+    def get_next_update(self, is_replay=False):
         """Get the next data update based on the simulation index"""
         if not self.initialized:
             return None
@@ -357,6 +373,7 @@ What is your trading decision?
         if self.current_index >= len(self.data):
             print("🏁 End of data reached")
             return None
+        
 
         # Get next chunk of data
         chunk_size = min(self.chunk_size, len(self.data) - self.current_index)
@@ -386,9 +403,11 @@ What is your trading decision?
         else:
             prediction_text = '- LSTM Prediction: N/A'
 
+        replay_message = "REPLAY MODE - OBSERVATION ONLY" if is_replay else "LIVE DATA, TRADING AVAILABLE"
         # Format update message without leading spaces
         update_message = f"""
 [Data Update] {self.ticker} at {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}:
+{replay_message}
 - Current price: ${current_price:.2f}
 - {self.ticker} is {change_direction} {abs(change_pct):.2f}% today (from ${f"{open_price:.2f}" if open_price is not None else 'N/A'} to ${current_price:.2f})
 {'='*60}
@@ -907,10 +926,7 @@ def data_node(state):
 
 
 def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2025-04-17", 
-                             max_iterations=200, log_dir="simulation_logs",
-                             ross_entry_time=None, ross_entry_price=None,
-                             ross_exit_time=None, ross_exit_price=None,
-                             start_near_ross_entry=False):
+                             max_iterations=200, log_dir="simulation_logs"):
     """
     Run a historical data simulation for a specified ticker and date range,
     focusing on the last day's price action.
@@ -973,12 +989,7 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
             "start_date": start_date,
             "end_date": end_date,
             "log_dir": log_dir,
-            "simulator": None,
-            "ross_entry_time": ross_entry_time,
-            "ross_entry_price": ross_entry_price,
-            "ross_exit_time": ross_exit_time,
-            "ross_exit_price": ross_exit_price,
-            "start_near_ross_entry": start_near_ross_entry
+            "simulator": None
         }
         
         # Set recursion limit
@@ -1003,7 +1014,6 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
 
 
 if __name__ == "__main__":
-    setup_custom_mock_news()
     tools = [get_account, place_market_BUY, place_market_SELL,]
      
     # Create LLM and bind tools

@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from alpaca.trading.enums import AssetClass
 import requests
 from bs4 import BeautifulSoup
+import pytz
 from config import ALPACA_API_KEY, ALPACA_API_SECRET
 
 from database import (
@@ -213,13 +214,15 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
 
     try:
         # Convert date strings to datetime
+        eastern  = pytz.timezone('US/Eastern')
         start = datetime.strptime(start_date, '%Y-%m-%d')
         end = datetime.strptime(end_date, '%Y-%m-%d') if end_date else datetime.now()
-        start = datetime.combine(start.date(), datetime.min.time())
-        end = datetime.combine(end.date(), datetime.max.time())
+        start = eastern.localize(datetime.combine(start.date(), datetime.min.time()))
+        end = eastern.localize(datetime.combine(end.date(), datetime.max.time()))
         # if end date is today, adjust
         if end.date() == datetime.now().date():
-            end = datetime.now() - timedelta(minutes=15) # get data on a 15 minute delay if its today.
+            current_eastern = datetime.now(eastern)
+            end = current_eastern
 
         print(f"GETTING DATA FROM {start} to {end}")
         # Initialize Alpaca data client
@@ -238,7 +241,8 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
             symbol_or_symbols=ticker,
             timeframe=unit,
             start=start,
-            end=end
+            end=end,
+            feed='iex'
         )
 
         print(f"Fetching data for {ticker}")
@@ -349,3 +353,28 @@ def check_database_status(ticker, start_date, end_date):
     if total_records > 0:
         latest = DatabaseQueries.get_latest_data_point(session, ticker)
         print(f"    Latest Data Point: {latest.timestamp}")
+
+
+def get_current_quote(ticker: str) -> str:
+    """Get current quote for a ticker (price and volume)."""
+    try:
+        req = StockLatestQuoteRequest(symbol_or_symbols=[ticker])
+        quote = data_client.get_stock_latest_quote(req)
+        ask_price = quote[ticker].ask_price
+        bid_price = quote[ticker].bid_price
+        return f"{ticker} current price is ${ask_price:.2f} (Ask), ${bid_price:.2f} (Bid)"
+    except Exception as e:
+        return f"Error getting quote for {ticker}: {str(e)}"
+    
+
+def get_stock_price(symbol: str) -> str:
+    """Fetch the current ask and bid price of a stock from Alpaca."""
+    symbol_str = symbol.upper()
+    symbol = [str(symbol_str)]
+    
+    try:
+        request_param = StockLatestQuoteRequest(symbol_or_symbols=symbol)
+        quote = data_client.get_stock_latest_quote(request_param)
+        return f"{symbol} ask price: {quote[symbol_str].ask_price}, bid price: {quote[symbol_str].bid_price}"
+    except Exception as e:
+        return f"Price fetch failed: {str(e)}"
