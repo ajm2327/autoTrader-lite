@@ -16,7 +16,7 @@ from langgraph.graph.message import add_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
 
-from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database, get_current_quote, get_stock_price
+from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database
 from alpaca_clients import llm, get_llm_with_tools, get_tool_node
 from lstm import StockPredictor
 
@@ -29,9 +29,9 @@ from decision_utils import (
 )
 
 from decision_tools import (
-    get_account, place_market_BUY, place_market_SELL, get_stock_price,
-    get_rvol, get_price_change, get_current_quote, get_company_overview,
-    get_float_info, get_detailed_stock_data, real_check_news
+    get_account, place_market_BUY, place_market_SELL,
+    get_rvol, get_price_change, get_company_overview,
+    get_float_info, get_detailed_stock_data, real_check_news, get_current_positions
 )
 
 from database import (
@@ -58,6 +58,7 @@ class HistoricalDataSimulator:
         self.ticker = ticker
         self.start_date = start_date
         self.end_date = end_date
+        self.is_replay = True
         self.interval_seconds = interval_seconds
         self.timescale = timescale
         self.data = None
@@ -171,6 +172,19 @@ class HistoricalDataSimulator:
             traceback.print_exc()
             return False
     
+    def _is_market_open(self):
+        """Check if market open"""
+        eastern = pytz.timezone('US/Eastern')
+        now = datetime.now(eastern)
+
+        if now.weekday() >= 5:
+            return False
+        
+        market_open = now.replace(hour=9, minute=30, second=0)
+        market_close = now.replace(hour=16, minute=0, second=0)
+
+        return market_open <= now <= market_close
+
     def _cache_realtime_data(self, new_data_point):
         """Cache realtime data and write to DB"""
         self.realtime_cache.append(new_data_point)
@@ -358,33 +372,49 @@ What is your trading decision?
         print("=" * 50)
         return HumanMessage(content=message)
 
-    def get_next_update(self):
-        if self.current_index >= len(self.data):
-            return self._get_realtime_update()
-        else:
-            return self._get_historical_update(is_replay=True)
     
-    def get_next_update(self, is_replay=False):
+    def get_next_update(self):
         """Get the next data update based on the simulation index"""
         if not self.initialized:
             return None
 
         # Check if we've reached the end of the data
         if self.current_index >= len(self.data):
-            print("🏁 End of data reached")
-            return None
-        
+            print("🏁 End of replay data reached - calling live data...")
 
-        # Get next chunk of data
-        chunk_size = min(self.chunk_size, len(self.data) - self.current_index)
-        next_chunk = self.data.iloc[self.current_index:self.current_index + chunk_size]
-        
-        # Update current index
-        self.current_index += chunk_size
+            if not self._is_market_open():
+                print(" ⛔ Market is closed - end live trading session")
+                return None
+            
+            self.is_replay = False
+            fresh_data = get_alpaca_data(self.ticker)
+            if fresh_data is None or fresh_data.empty:
+                print("❌ Couldn't get real time data")
+                return None
+            self.data = pd.concat([self.data, fresh_data]).drop_duplicates()
 
-        # For visualization purposes, slow down the simulation
-        if self.interval_seconds > 0:
-            time.sleep(self.interval_seconds)
+            self.data = add_indicators(self.data, indicator_set='alternate')
+
+            chunk_size = min(self.chunk_size, len(self.data))
+            next_chunk = self.data.iloc[-chunk_size:]
+
+            self.current_index = len(self.data)
+            time.sleep(60)
+        
+        else:
+            self.is_replay = True
+            
+
+            # Get next chunk of data
+            chunk_size = min(self.chunk_size, len(self.data) - self.current_index)
+            next_chunk = self.data.iloc[self.current_index:self.current_index + chunk_size]
+        
+            # Update current index
+            self.current_index += chunk_size
+
+            # For visualization purposes, slow down the simulation
+            if self.interval_seconds > 0:
+                time.sleep(self.interval_seconds)
             
         # Calculate metrics
         rvol = self.sim_get_rvol()
@@ -403,7 +433,7 @@ What is your trading decision?
         else:
             prediction_text = '- LSTM Prediction: N/A'
 
-        replay_message = "REPLAY MODE - OBSERVATION ONLY" if is_replay else "LIVE DATA, TRADING AVAILABLE"
+        replay_message = "REPLAY MODE - OBSERVATION ONLY" if self.is_replay else "LIVE DATA, TRADING AVAILABLE"
         # Format update message without leading spaces
         update_message = f"""
 [Data Update] {self.ticker} at {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}:
@@ -1014,14 +1044,14 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
 
 
 if __name__ == "__main__":
-    tools = [get_account, place_market_BUY, place_market_SELL,]
+    tools = [get_account, place_market_BUY, place_market_SELL, get_current_positions]
      
     # Create LLM and bind tools
     # Use centralized LLM creation
     llm_with_tools = get_llm_with_tools(tools)
     tool_node = get_tool_node(tools)
     final_state = run_historical_simulation(
-        ticker="AMD",
+        ticker="SPY",
         start_date="2025-03-01",
-        end_date="2025-04-17"
+        end_date="2025-06-06"
     )

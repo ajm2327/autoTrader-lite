@@ -200,7 +200,7 @@ def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None)
     
     return data
 
-def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Day", store_in_db = True):
+def get_alpaca_data(ticker, start_date=None, end_date=None, is_paper=True, timescale = "Minute", store_in_db = True):
     """
     Retrieve historical stock data from Alpaca API with debugging.
     """
@@ -215,14 +215,21 @@ def get_alpaca_data(ticker, start_date, end_date, is_paper=True, timescale = "Da
     try:
         # Convert date strings to datetime
         eastern  = pytz.timezone('US/Eastern')
-        start = datetime.strptime(start_date, '%Y-%m-%d')
-        end = datetime.strptime(end_date, '%Y-%m-%d') if end_date else datetime.now()
-        start = eastern.localize(datetime.combine(start.date(), datetime.min.time()))
-        end = eastern.localize(datetime.combine(end.date(), datetime.max.time()))
-        # if end date is today, adjust
-        if end.date() == datetime.now().date():
-            current_eastern = datetime.now(eastern)
-            end = current_eastern
+        if start_date is None:
+            start = eastern.localize(datetime.now() - timedelta(minutes=5))
+        else:
+            start = datetime.strptime(start_date, '%Y-%m-%d')
+            start = eastern.localize(datetime.combine(start.date(), datetime.min.time()))
+
+        if end_date is None:
+            end = eastern.localize(datetime.now())
+        else:
+            end = datetime.strptime(end_date, '%Y-%m-%d')
+            end = eastern.localize(datetime.combine(end.date(), datetime.max.time()))
+            # if end date is today, adjust
+            if end.date() == datetime.now().date():
+                end = eastern.localize(datetime.now())
+
 
         print(f"GETTING DATA FROM {start} to {end}")
         # Initialize Alpaca data client

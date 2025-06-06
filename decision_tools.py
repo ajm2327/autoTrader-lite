@@ -7,11 +7,13 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from alpaca_clients import trading_client, data_client
+from alpaca.trading.requests import MarketOrderRequest, GetAssetsRequest
+from alpaca.trading.enums import OrderSide, TimeInForce, AssetClass, AssetStatus, AssetExchange
 from alpaca.trading.enums import AssetClass
 import requests
 from bs4 import BeautifulSoup
 
-from data_util import get_alpaca_data, add_indicators, dataframe_info
+from data_util import get_alpaca_data, add_indicators, dataframe_info, get_stock_price, scrape_float
 
 #==================== G E M I N I +++++++ T O O L S E T ======================================#
 
@@ -27,6 +29,27 @@ def get_account() -> str:
         
     except Exception as e:
         return f"Get account info failed: {str(e)}"
+    
+@tool
+def get_current_positions() -> str:
+    """Get all current positions from alpaca trading account"""
+    try:
+        positions = trading_client.get_all_positions()
+
+        if not positions:
+            return "No Open positions"
+        
+        position_info = []
+        for position in positions:
+            position_info.append(
+                f"{position.symbol}: {position.qty} shares @ ${float(position.avg_cost):.2f} "
+                f"(Current: ${float(position.market_value)/float(position.qty):.2f}), "
+                f"P&L: ${float(position.unrealized_pl):.2f})"
+            )
+        return f"Current positions:\n" + "\n".join(position_info)
+    
+    except Exception as e:
+        return f"Error getting positions: {str(e)}"
 
 @tool
 def place_market_BUY(symbol: str, qty: int, side: str) -> str:
