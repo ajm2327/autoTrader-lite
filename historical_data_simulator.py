@@ -1004,12 +1004,12 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
 
 if __name__ == "__main__":
     setup_custom_mock_news()
-    mock_tools = [mock_check_news, mock_place_market_BUY, mock_place_market_SELL, mock_get_position]
+    tools = [get_account, place_market_BUY, place_market_SELL,]
      
     # Create LLM and bind tools
     # Use centralized LLM creation
-    llm_with_tools = get_llm_with_tools(mock_tools)
-    tool_node = get_tool_node(mock_tools)
+    llm_with_tools = get_llm_with_tools(tools)
+    tool_node = get_tool_node(tools)
     final_state = run_historical_simulation(
         ticker="AMD",
         start_date="2025-03-01",
