@@ -23,6 +23,7 @@ class HistoricalData(Base):
     adjusted_close = Column(DECIMAL(12,4))
     volume = Column(BigInteger, nullable = False)
     vwap = Column(DECIMAL(12,4))
+    trade_count = Column(BigInteger, nullable=False)
     last_updated = Column(DateTime(timezone=True), default=func.current_timestamp())
 
     indicators = relationship("TechnicalIndicators", back_populates='historical_data', cascade='all, delete-orphan')

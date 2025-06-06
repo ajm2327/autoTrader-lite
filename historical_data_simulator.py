@@ -448,7 +448,7 @@ What is your trading decision?
 {'='*60}
 
 - Recent activity:
-{next_chunk[['Open', 'High', 'Low', 'Close', 'Volume']]}
+{next_chunk[['Open', 'High', 'Low', 'Close', 'Volume', 'trade_count']]}
 
 Indicators:
 - RSI: {next_chunk.iloc[-1]['RSI']:.2f}
@@ -626,6 +626,7 @@ Based on this data, what is your next decision?
                 'Adj Close': float(record.adjusted_close or record.close),
                 'Volume': int(record.volume),
                 'vwap': float(record.vwap) if record.vwap else None,
+                'trade_count': float(record.trade_count) if record.trade_count else None
             }
 
             if record.indicators:

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS historical_data (
     adjusted_close DECIMAL(12,4),
     volume INTEGER NOT NULL,
     vwap DECIMAL(12,4),
+    trade_count INTEGER NOT NULL,
     last_updated DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(ticker, timestamp)
 );

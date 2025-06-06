@@ -41,7 +41,9 @@ class StockPredictor:
         return data
 
     def clean_data(self, data, columns_to_drop=['Volume', 'Close', 'Date']):
-        data.reset_index(inplace=True)
+        data = data.copy()
+        if data.index.name == 'Date' or 'Date' in data.columns:
+            data.reset_index(inplace=True, drop=True)
         actual_columns_to_drop = [col for col in columns_to_drop if col in data.columns]
         if actual_columns_to_drop:
             data.drop(actual_columns_to_drop, axis=1, inplace=True)

@@ -310,6 +310,7 @@ def _store_dataframe_in_database(ticker, df):
                 low=row['Low'],
                 close=row['Close'],
                 adjusted_close=row['Adj Close'],
+                trade_count = row['trade_count'],
                 volume=row['Volume'],
                 vwap = row.get('vwap')
             )
