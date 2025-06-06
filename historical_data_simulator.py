@@ -120,7 +120,10 @@ class HistoricalDataSimulator:
             print("LSTM initialized successfully")
             
             # Separate training data from data period just for gemini
-            sim_data = self.data[self.data.index >= pd.Timestamp(self.start_date, tz='UTC')]
+            start_ts = pd.Timestamp(self.start_date)
+            if self.data.index.tz is not None:
+                start_ts = start_ts.tz_localize('UTC')
+            sim_data = self.data[self.data.index >= start_ts]
             self.data = sim_data
             
             # Identify the last day's data
@@ -180,7 +183,7 @@ class HistoricalDataSimulator:
 
                 if missing_dates:
                     print(f"Found {len(missing_dates)} missing data points, fetching from API...")
-                    self._fetch_and_store_missing_data(session, missing_dates)
+                    self._fetch_and_store_missing_data(session, start_date, end_date)
 
                     existing_data = DatabaseQueries.get_data_with_indicators(
                         session, self.ticker, start_date, end_date
@@ -578,11 +581,7 @@ Based on this data, what is your next decision?
                     'Upper_Band': float(indicator.upper_band) if indicator.upper_band else None,
                     'Lower_Band': float(indicator.lower_band) if indicator.lower_band else None,
                     'EMA': float(indicator.ema) if indicator.ema else None,
-                    'EMAF': float(indicator.emaf) if indicator.emaf else None,
-                    'Hist_Volatility': float(indicator.hist_volatility) if indicator.hist_volatilty else None,
-                    'BB_Width': float(indicator.bb_width) if indicator.bb_width else None,
-                    'ATR': float(indicator.atr) if indicator.atr else None,
-                    'OBV': float(indicator.obv) if indicator.obv else None
+                    'EMAF': float(indicator.emaf) if indicator.emaf else None
                 })
 
             data.append(row)
@@ -598,7 +597,7 @@ Based on this data, what is your next decision?
     
     def _fetch_and_store_missing_data(self, session, start_date, end_date):
         """Fetch all data from api and store in db"""
-        df = get_alpaca_data(self.ticker, start_date, end_date, timecale=self.timescale, store_in_db=True)
+        df = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
         df = add_indicators(df, indicator_set='alternate',
                             store_in_db = True, ticker=self.ticker)
         return df

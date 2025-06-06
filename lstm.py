@@ -7,7 +7,7 @@ import joblib
 import logging
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from database import (
     db_config, HistoricalData, TechnicalIndicators, 
@@ -41,11 +41,11 @@ class StockPredictor:
         return data
 
     def clean_data(self, data, columns_to_drop=['Volume', 'Close', 'Date']):
-        data.dropna(inplace=True)
         data.reset_index(inplace=True)
         actual_columns_to_drop = [col for col in columns_to_drop if col in data.columns]
         if actual_columns_to_drop:
             data.drop(actual_columns_to_drop, axis=1, inplace=True)
+        data.dropna(subset=['Adj Close'], inplace = True)
         return data
     
     def scale_data(self, data, feature_range=(0,1), save_scaler=True, scaler_path='scaler.pkl'):
@@ -131,6 +131,12 @@ class StockPredictor:
         chunk_size = 5
         data = self.prepare_target(self.data.copy(), chunk_size)
         data = self.clean_data(data)
+        print(f"Data shape after cleaning: {data.shape}")
+        print(f"NaN values in data: {data.isna().sum().sum()}")
+        if data.isna().sum().sum() > 0:
+            print("Columns with NaN values:", data.columns[data.isna().any()].tolist())
+            data = data.dropna()  # Drop any remaining NaN rows
+            print(f"Data shape after dropping NaN: {data.shape}")
         feature_names = [col for col in data.columns if not col.startswith('Target')]
         target_names = [col for col in data.columns if col.startswith('Target')]
 
