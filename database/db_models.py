@@ -50,11 +50,6 @@ class TechnicalIndicators(Base):
     lower_band = Column(DECIMAL(12,4))
 
     ema = Column(DECIMAL(12, 4))
-    emaf = Column(DECIMAL(12,4))
-    #hist_volatility = Column(DECIMAL(10,6))
-    #bb_width = Column(DECIMAL(10,6))
-    #atr = Column(DECIMAL(12,6))
-    #obv = Column(BigInteger)
 
 
     calculated_at = Column(DateTime(timezone=True), default=func.current_timestamp())

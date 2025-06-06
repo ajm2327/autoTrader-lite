@@ -574,6 +574,7 @@ Based on this data, what is your next decision?
                 row.update({
                     'SMA_20': float(indicator.sma_20) if indicator.sma_20 else None,
                     'SMA_50': float(indicator.sma_50) if indicator.sma_50 else None,
+                    'SMA_200': float(indicator.sma_200) if indicator.sma_200 else None,
                     'RSI': float(indicator.rsi) if indicator.rsi else None,
                     'MACD': float(indicator.macd) if indicator.macd else None,
                     'Signal_Line': float(indicator.signal_line) if indicator.signal_line else None,
@@ -581,7 +582,6 @@ Based on this data, what is your next decision?
                     'Upper_Band': float(indicator.upper_band) if indicator.upper_band else None,
                     'Lower_Band': float(indicator.lower_band) if indicator.lower_band else None,
                     'EMA': float(indicator.ema) if indicator.ema else None,
-                    'EMAF': float(indicator.emaf) if indicator.emaf else None
                 })
 
             data.append(row)

@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS technical_indicators (
     middle_band DECIMAL(12,4),
     upper_band DECIMAL(12,4),
     lower_band DECIMAL(12,4),
-    ema DECIMAL(12,4),
-    emaf DECIMAL(12,4),
+    ema DECIMAL(12,4)
+    --emaf DECIMAL(12,4),
     --hist_volatility DECIMAL(10,6),
     --bb_width DECIMAL(10,6),
     --atr DECIMAL(12,6),
