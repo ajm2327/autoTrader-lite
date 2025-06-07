@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+myenv/
+*.db
+*.log
+*.keras
+models_saved/

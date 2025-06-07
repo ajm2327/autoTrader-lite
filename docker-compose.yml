@@ -1,0 +1,22 @@
+version: '3.9'
+
+services:
+  main:
+    build: .
+    container_name: auto_trader_main
+    volumes:
+      - .:/app
+    command: python historical_data_simulator.py
+    restart: always
+
+  dashboard:
+    build: .
+    container_name: auto_trader_dashboard
+    volumes:
+      - .:/app
+    ports:
+      - published: 8501
+        target: 8501
+    command: streamlit run dashboard.py --server.port=8501 --server.enableCORS=false
+    restart: always
+    
