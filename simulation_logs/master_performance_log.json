@@ -4267,12 +4267,408 @@
         "summary": "simulation_logs/SPY_20250606_142509_summary.json"
       },
       "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:27.732504",
+      "performance": {
+        "total_decisions": 39,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:28.483076",
+      "performance": {
+        "total_decisions": 40,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:32.420842",
+      "performance": {
+        "total_decisions": 41,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:33.184220",
+      "performance": {
+        "total_decisions": 42,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:34.054657",
+      "performance": {
+        "total_decisions": 43,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:34.774988",
+      "performance": {
+        "total_decisions": 44,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:35.681284",
+      "performance": {
+        "total_decisions": 45,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:36.367610",
+      "performance": {
+        "total_decisions": 46,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:37.557532",
+      "performance": {
+        "total_decisions": 47,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:38.284179",
+      "performance": {
+        "total_decisions": 48,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:39.136488",
+      "performance": {
+        "total_decisions": 49,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:41.071908",
+      "performance": {
+        "total_decisions": 50,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:42.116270",
+      "performance": {
+        "total_decisions": 51,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:42.877661",
+      "performance": {
+        "total_decisions": 52,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:43.788300",
+      "performance": {
+        "total_decisions": 53,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:44.495452",
+      "performance": {
+        "total_decisions": 54,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:45.348390",
+      "performance": {
+        "total_decisions": 55,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
+    },
+    {
+      "id": "SPY_20250606_163152",
+      "ticker": "SPY",
+      "date_range": "2025-03-01 to 2025-06-06",
+      "timestamp": "2025-06-06 16:43:46.106861",
+      "performance": {
+        "total_decisions": 56,
+        "total_trades": 0,
+        "winning_trades": 0,
+        "losing_trades": 0,
+        "win_rate": 0,
+        "total_profit": 0,
+        "average_trade_pnl": 0
+      },
+      "final_position": "NOT IN POSITION",
+      "log_files": {
+        "trades": "simulation_logs/SPY_20250606_163152_trades.json",
+        "decisions": "simulation_logs/SPY_20250606_163152_decisions.json",
+        "summary": "simulation_logs/SPY_20250606_163152_summary.json"
+      },
+      "key_decisions": []
     }
   ],
   "meta": {
     "created_at": "2025-06-04 16:52:20.141157",
-    "last_updated": "2025-06-06 14:32:28.187812",
-    "total_simulations": 194,
+    "last_updated": "2025-06-06 16:43:46.106923",
+    "total_simulations": 212,
     "total_trades": 0,
     "overall_win_rate": 0,
     "overall_profit": 0

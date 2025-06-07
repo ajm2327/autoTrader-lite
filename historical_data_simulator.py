@@ -275,9 +275,15 @@ class HistoricalDataSimulator:
         try:
             needed_rows = self.predictor.backcandles + 1
             start_idx = max(0, self.current_index - needed_rows)
-            recent_data = self.data.iloc[start_idx:self.current_index]
+            end_idx = self.current_index
+
+            if (end_idx - start_idx) < needed_rows:
+                end_idx = min(len(self.data), start_idx + needed_rows)
+
+            recent_data = self.data.iloc[start_idx:end_idx]
 
             print(f"Getting LSTM prediction, current_index= {self.current_index}, recent_data length= {len(recent_data)}")
+            print(f"start_idx={start_idx}, end_idx={end_idx}, needed_rows={needed_rows}")
 
             if len(recent_data) < needed_rows:
                 print(f" LSTM: Not enough data for prediction, ({len(recent_data)}/{needed_rows})")
@@ -623,10 +629,10 @@ Based on this data, what is your next decision?
                 'High': float(record.high),
                 'Low': float(record.low),
                 'Close': float(record.close),
-                'Adj Close': float(record.adjusted_close or record.close),
-                'Volume': int(record.volume),
+                'trade_count': float(record.trade_count) if record.trade_count else None,
                 'vwap': float(record.vwap) if record.vwap else None,
-                'trade_count': float(record.trade_count) if record.trade_count else None
+                'Volume': int(record.volume),
+                'Adj Close': float(record.adjusted_close or record.close)
             }
 
             if record.indicators:

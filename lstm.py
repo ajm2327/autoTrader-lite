@@ -148,6 +148,10 @@ class StockPredictor:
         feature_data_scaled, scaler = self.scale_data(feature_data)
         self.scaler = scaler
 
+        print(f"TRAINING - feature_names: {feature_names}")
+        print(f"TRAINING - feature_data.columns: {list(feature_data.columns)}")
+        print(f"TRAINING - scaler.feature_names_in_: {getattr(scaler, 'feature_names_in_', 'Not available')}")
+
         #scale targets separately
         target_scaler = MinMaxScaler(feature_range=(0,1))
         target_data_scaled = target_scaler.fit_transform(target_data)
@@ -171,6 +175,25 @@ class StockPredictor:
         model, history = self.create_and_train_lstm(X_train, y_train, chunk_size)
         return model, history, X_test, y_test
 
+    def _ensure_feature_consistency(self, data):
+        """Ensure predicting features match training features"""
+        if hasattr(self.scaler, 'feature_names_in_'):
+            expected_features = list(self.scaler.feature_names_in_)
+            current_features = list(data.columns)
+            missing = set(expected_features) - set(current_features)
+            if missing:
+                print(f"Missing features: {missing}")
+
+            extra = set(current_features) - set(expected_features)
+            if extra:
+                print(f"Extra features: {extra}")
+            data = data[expected_features]
+            print(f"NaN count before filling: {data.isna().sum().sum()}")
+            data = data.fillna(method='ffill').fillna(method='bfill')
+            print(f"NaN cout after filling: {data.isna().sum().sum()}")
+
+        return data
+    
     def predict(self, data, chunk_size=5):
         if self.model is None:
             raise ValueError("Model not trained. Please train the model first.")
@@ -226,15 +249,35 @@ class StockPredictor:
         
         feature_names = [col for col in data.columns if not col.startswith('Target')]
         feature_data = data[feature_names]
+
+        print(f"PREDICTING - feature_names: {feature_names}")
+        print(f"PREDICTING - feature_data.columns: {list(feature_data.columns)}")
+        print(f"PREDICTING - scaler.feature_names_in_: {getattr(self.scaler, 'feature_names_in_', 'Not available')}")
+
+        #feature_data = self._ensure_feature_consistency(feature_data)
+
+        print(f"After feature consistency - shape: {feature_data.shape}")
+        print(f"NaN count after consistency: {feature_data.isna().sum().sum()}")
+        print(f"Feature data sample:\n{feature_data.tail(2)}")
+
         data_scaled = self.scaler.transform(feature_data)
-        
+        print(f"After scaling - shape: {data_scaled.shape}")
+        print(f"NaN count after scaling: {np.isnan(data_scaled).sum()}")
+        print(f"Data scaled sample: {data_scaled[-2:]}")
+
 
         X = data_scaled[-self.backcandles:, self.feature_columns]
         X = X.reshape(1, self.backcandles, len(self.feature_columns))
 
+        print(f"X shape: {X.shape}")
+        print(f"NaN count in X: {np.isnan(X).sum()}")
+
         predictions_scaled = self.model.predict(X)
+        print(f"Raw predictions_scaled: {predictions_scaled}")
+        print(f"NaN count in predictions_scaled: {np.isnan(predictions_scaled).sum()}")
 
         predictions = self.target_scaler.inverse_transform(predictions_scaled.reshape(1,-1))[0]
+        print(f"Final Predictions: {predictions}")
 
         return predictions.tolist()
     
