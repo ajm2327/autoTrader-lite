@@ -16,7 +16,7 @@ from langgraph.graph.message import add_messages
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
 
-from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database
+from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database, remove_duplicate_records
 from alpaca_clients import llm, get_llm_with_tools, get_tool_node
 from lstm import StockPredictor
 
@@ -91,6 +91,8 @@ class HistoricalDataSimulator:
             print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
             
             init_database()
+
+            remove_duplicate_records(self.ticker)
 
             check_database_status(self.ticker, self.start_date, self.end_date)
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
@@ -212,11 +214,10 @@ class HistoricalDataSimulator:
                 df_data = self._db_records_to_dataframe(existing_data)
 
                 #check for gaps
-                date_range = pd.date_range(start=start_date, end=end_date, freq='1min')
-                missing_dates = self._find_missing_dates(df_data, date_range)
+                has_missing_data = self._find_missing_dates(df_data)
 
-                if missing_dates:
-                    print(f"Found {len(missing_dates)} missing data points, fetching from API...")
+                if has_missing_data:
+                    print(f"Found missing data points, fetching from API...")
                     self._fetch_and_store_missing_data(session, start_date, end_date)
 
                     existing_data = DatabaseQueries.get_data_with_indicators(
@@ -655,11 +656,19 @@ Based on this data, what is your next decision?
         df = pd.DataFrame(data, index=[r.timestamp for r in db_records])
         return df
     
-    def _find_missing_dates(self, existing_df, expected_date_range):
-        """Find missing dates in data"""
-        existing_dates = set(existing_df.index)
-        expected_dates = set(expected_date_range)
-        return list(expected_dates - existing_dates)
+    def _find_missing_dates(self, existing_df):
+        """Find missing dates in data,only checking for market hours"""
+        if existing_df.empty:
+            return True # Fetch all data
+        
+        data_start = existing_df.index.min()
+        data_end = existing_df.index.min()
+
+        if data_start <= pd.Timestamp(self.start_date) and data_end >= pd.Timestamp(self.end_date):
+            return False
+        
+        return True # some data missing
+    
     
     def _fetch_and_store_missing_data(self, session, start_date, end_date):
         """Fetch all data from api and store in db"""
@@ -677,6 +686,7 @@ Based on this data, what is your next decision?
 
             df = add_indicators(df, indicator_set='alternate', store_in_db=True, ticker=self.ticker)
             _update_indicators_in_database(self.ticker, df)
+            remove_duplicate_records(self.ticker)
         return df
 
 

@@ -12,6 +12,8 @@ from bs4 import BeautifulSoup
 import pytz
 from config import ALPACA_API_KEY, ALPACA_API_SECRET
 
+from sqlalchemy import func
+
 from database import (
     db_config, HistoricalData, TechnicalIndicators, 
     ModelVersions, Predictions, DatabaseQueries, init_database
@@ -300,21 +302,36 @@ def get_alpaca_data(ticker, start_date=None, end_date=None, is_paper=True, times
 def _store_dataframe_in_database(ticker, df):
     """Store df in db"""
     with db_config.get_db_session() as session:
+
+        stored_count = 0
+        duplicate_count = 0
+
         for timestamp, row in df.iterrows():
-            historical_data = HistoricalData(
-                ticker = ticker,
-                timestamp = timestamp,
-                date = timestamp.date(),
-                open=row['Open'],
-                high=row['High'],
-                low=row['Low'],
-                close=row['Close'],
-                adjusted_close=row['Adj Close'],
-                trade_count = row['trade_count'],
-                volume=row['Volume'],
-                vwap = row.get('vwap')
-            )
-            session.add(historical_data)
+            existing = session.query(HistoricalData).filter(
+                HistoricalData.ticker == ticker,
+                HistoricalData.timestamp == timestamp
+            ).first()
+
+            if not existing:
+                historical_data = HistoricalData(
+                    ticker = ticker,
+                    timestamp = timestamp,
+                    date = timestamp.date(),
+                    open=row['Open'],
+                    high=row['High'],
+                    low=row['Low'],
+                    close=row['Close'],
+                    adjusted_close=row['Adj Close'],
+                    trade_count = row['trade_count'],
+                    volume=row['Volume'],
+                    vwap = row['vwap']
+                )
+                session.add(historical_data)
+                stored_count += 1
+            else:
+                duplicate_count += 1
+        print(f"    📂 Stored {stored_count} new records, skipped {duplicate_count} duplicates")
+
 
 def _update_indicators_in_database(ticker, df):
     with db_config.get_db_session() as session:
@@ -386,3 +403,26 @@ def get_stock_price(symbol: str) -> str:
         return f"{symbol} ask price: {quote[symbol_str].ask_price}, bid price: {quote[symbol_str].bid_price}"
     except Exception as e:
         return f"Price fetch failed: {str(e)}"
+    
+
+def remove_duplicate_records(ticker):
+    """Clean database for duplicates"""
+    with db_config.get_db_session() as session:
+        # find dups
+        duplicates = session.query(
+            HistoricalData.ticker,
+            HistoricalData.timestamp,
+            func.count(HistoricalData.data_id).label('count')
+        ).group_by(
+            HistoricalData.ticker,
+            HistoricalData.timestamp
+        ).having(func.count(HistoricalData.data_id) > 1).all()
+
+        for dup in duplicates:
+            records = session.query(HistoricalData).filter(
+                HistoricalData.ticker == dup.ticker,
+                HistoricalData.timestamp == dup.timestamp
+            ).order_by(HistoricalData.data_id).all()
+
+            for record in records[1:]:
+                session.delete(record)

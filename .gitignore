@@ -5,6 +5,8 @@ models_saved/
 best_model.keras
 autotrader_lite.db
 
+autoTrader-lite.code-workspace
+
 # Python cache files
 __pycache__/
 *.py[cod]
