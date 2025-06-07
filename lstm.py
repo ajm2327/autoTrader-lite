@@ -256,8 +256,18 @@ class StockPredictor:
 
         #feature_data = self._ensure_feature_consistency(feature_data)
 
+        # Handle NaN values by dropping SMA_200 if it has NaNs
+        if 'SMA_200' in feature_data.columns and feature_data['SMA_200'].isna().any():
+            print("Dropping SMA_200 due to NaNs, not enough data for SMA_200...")
+            feature_data = feature_data.drop('SMA_200', axis=1)
+            self.feature_columns = [i for i, col in enumerate(feature_names) if col != 'SMA_200']
+        
         print(f"After feature consistency - shape: {feature_data.shape}")
         print(f"NaN count after consistency: {feature_data.isna().sum().sum()}")
+
+        # Fill any remaining nans
+        feature_data = feature_data.fillna(method='ffill').fillna(method='bfill')
+        
         print(f"Feature data sample:\n{feature_data.tail(2)}")
 
         data_scaled = self.scaler.transform(feature_data)

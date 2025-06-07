@@ -139,15 +139,24 @@ class HistoricalDataSimulator:
                 print(f"✅ New LSTM model saved to {saved_path}")
             print("LSTM initialized successfully")
             
-            target_start = eastern.localize(target_date.replace(hour=9,minute=30,second=0))
-
-
             # Separate training data from data period just for gemini
             if self.data.index.tz is None:
-                target_start = target_start.replace(tzinfo=None)
-            else:
-                target_start = pd.Timestamp(target_start).tz_convert(self.data.index.tz).to_pydatetime()
-            sim_data = self.data[self.data.index >= target_start]
+                self.data.index = pd.to_datetime(self.data.index, utc = True).tz_convert(eastern)
+            elif self.data.index.tz != eastern:
+                self.data.index = self.data.index.tz_convert(eastern)
+            market_open = eastern.localize(target_date.replace(hour=9, minute=30))
+
+            sim_data = self.data[self.data.index >= market_open]
+
+            if sim_data.empty:
+                target_date_data = self.data[self.data.index.date == target_date.date()]
+                if not target_date_data.empty:
+                    sim_data = target_date_data
+                    print(f"    ⌚⚠️ No Data at 9:30 AM, using closest available time: {sim_data.index[0]}")
+                else:
+                    print(f"    ❌ No data found for target date {self.end_date}")
+                    return False
+                
             self.data = sim_data
             
             if self.data.empty:
@@ -161,10 +170,6 @@ class HistoricalDataSimulator:
             print(f"    Data points available: {len(self.data)}")
             print(f"    ⌚ Live day: {self.is_live_day}")
             # Identify the last day's data
-            # Convert all dates to string format to avoid timezone issues
-            dates_as_strings = [str(d.date()) for d in self.data.index]
-            unique_dates = sorted(set(dates_as_strings))
-                                    
             
             # Initialize empty log files
             self._initialize_log_files()
@@ -654,6 +659,10 @@ Based on this data, what is your next decision?
             data.append(row)
 
         df = pd.DataFrame(data, index=[r.timestamp for r in db_records])
+
+        # add indicators again to avoid NaN indicators in prediction
+        df = add_indicators(df, indicator_set='alternate', store_in_db=False, ticker=None)
+
         return df
     
     def _find_missing_dates(self, existing_df):
@@ -662,7 +671,7 @@ Based on this data, what is your next decision?
             return True # Fetch all data
         
         data_start = existing_df.index.min()
-        data_end = existing_df.index.min()
+        data_end = existing_df.index.max()
 
         if data_start <= pd.Timestamp(self.start_date) and data_end >= pd.Timestamp(self.end_date):
             return False
