@@ -68,6 +68,7 @@ class HistoricalDataSimulator:
         self.chunk_size = 10
         self.log_dir = log_dir
         self.sim_id = f"{ticker}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        self.cumulative_data = pd.DataFrame()
         
         # Create log directory if it doesn't exist
         os.makedirs(log_dir, exist_ok=True)
@@ -336,6 +337,8 @@ class HistoricalDataSimulator:
         # Get data at the start of the last day
         chunk_size = min(20, len(self.data) - self.current_index)
         initial_chunk = self.data.iloc[self.current_index:self.current_index+chunk_size]
+        self.cumulative_data = initial_chunk.copy()
+        self.cumulative_data.to_csv('current_data_chunk.csv')
         
         # Update current index
         self.current_index += chunk_size
@@ -412,6 +415,7 @@ What is your trading decision?
 
             chunk_size = min(self.chunk_size, len(self.data))
             next_chunk = self.data.iloc[-chunk_size:]
+        
 
             self.current_index = len(self.data)
             time_module.sleep(60)
@@ -481,6 +485,12 @@ Based on this data, what is your next decision?
         print(f'{update_message}')
         print(f'{'='*60}')
 
+        
+        #cache chunk to plot on dashboard
+        self.cumulative_data = pd.concat([self.cumulative_data, next_chunk])
+        self.cumulative_data = self.cumulative_data[~self.cumulative_data.index.duplicated(keep='last')]
+        self.cumulative_data = self.cumulative_data.sort_index()
+        self.cumulative_data.to_csv('current_data_chunk.csv')
         
         return HumanMessage(content=update_message)
 

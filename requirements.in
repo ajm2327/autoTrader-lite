@@ -19,3 +19,5 @@ pytz
 sqlalchemy
 psycopg2-binary
 streamlit
+matplotlib
+seaborn
