@@ -351,10 +351,10 @@ class HistoricalDataSimulator:
         lstm_prediction = self.get_lstm_prediction()
         if lstm_prediction:
             prediction_text = f"""- LSTM Predictions (next {self.chunk_size} min):
-Raw Predictions: {lstm_prediction['raw_predictions']}
-Direction: {lstm_prediction['direction']} ({lstm_prediction['price_change_pct']:.2f}%)
-Range: ${lstm_prediction['min_price']:.2f} - ${lstm_prediction['max_price']:.2f}
-Mean: ${lstm_prediction['mean_price']:.2f}"""
+            Raw Predictions: {lstm_prediction['raw_predictions']}
+            Direction: {lstm_prediction['direction']} ({lstm_prediction['price_change_pct']:.2f}%)
+            Range: ${lstm_prediction['min_price']:.2f} - ${lstm_prediction['max_price']:.2f}
+            Mean: ${lstm_prediction['mean_price']:.2f}"""
         else:
             prediction_text = '- LSTM Prediction: N/A'
         
@@ -446,6 +446,7 @@ What is your trading decision?
         lstm_prediction = self.get_lstm_prediction()
         if lstm_prediction:
             prediction_text = f"""- LSTM Predictions (next {self.chunk_size} min):
+            Raw Predictions: {lstm_prediction['raw_predictions']}
             Direction: {lstm_prediction['direction']} ({lstm_prediction['price_change_pct']:.2f}%)
             Range: ${lstm_prediction['min_price']:.2f} - ${lstm_prediction['max_price']:.2f}
             Mean: ${lstm_prediction['mean_price']:.2f}"""
@@ -491,7 +492,7 @@ Based on this data, what is your next decision?
         self.cumulative_data = self.cumulative_data[~self.cumulative_data.index.duplicated(keep='last')]
         self.cumulative_data = self.cumulative_data.sort_index()
         self.cumulative_data.to_csv('current_data_chunk.csv')
-        
+
         return HumanMessage(content=update_message)
 
     def log_decision(self, decision_text, current_time, current_price, position_change):

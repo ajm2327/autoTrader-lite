@@ -133,12 +133,12 @@ class StockPredictor:
         chunk_size = 5
         data = self.prepare_target(self.data.copy(), chunk_size)
         data = self.clean_data(data)
-        print(f"Data shape after cleaning: {data.shape}")
-        print(f"NaN values in data: {data.isna().sum().sum()}")
+        #print(f"Data shape after cleaning: {data.shape}")
+        #print(f"NaN values in data: {data.isna().sum().sum()}")
         if data.isna().sum().sum() > 0:
-            print("Columns with NaN values:", data.columns[data.isna().any()].tolist())
+            #print("Columns with NaN values:", data.columns[data.isna().any()].tolist())
             data = data.dropna()  # Drop any remaining NaN rows
-            print(f"Data shape after dropping NaN: {data.shape}")
+            #print(f"Data shape after dropping NaN: {data.shape}")
         feature_names = [col for col in data.columns if not col.startswith('Target')]
         target_names = [col for col in data.columns if col.startswith('Target')]
 
@@ -148,9 +148,9 @@ class StockPredictor:
         feature_data_scaled, scaler = self.scale_data(feature_data)
         self.scaler = scaler
 
-        print(f"TRAINING - feature_names: {feature_names}")
-        print(f"TRAINING - feature_data.columns: {list(feature_data.columns)}")
-        print(f"TRAINING - scaler.feature_names_in_: {getattr(scaler, 'feature_names_in_', 'Not available')}")
+        #print(f"TRAINING - feature_names: {feature_names}")
+        #print(f"TRAINING - feature_data.columns: {list(feature_data.columns)}")
+        #print(f"TRAINING - scaler.feature_names_in_: {getattr(scaler, 'feature_names_in_', 'Not available')}")
 
         #scale targets separately
         target_scaler = MinMaxScaler(feature_range=(0,1))
@@ -188,9 +188,9 @@ class StockPredictor:
             if extra:
                 print(f"Extra features: {extra}")
             data = data[expected_features]
-            print(f"NaN count before filling: {data.isna().sum().sum()}")
+            #print(f"NaN count before filling: {data.isna().sum().sum()}")
             data = data.fillna(method='ffill').fillna(method='bfill')
-            print(f"NaN cout after filling: {data.isna().sum().sum()}")
+            #print(f"NaN cout after filling: {data.isna().sum().sum()}")
 
         return data
     
@@ -250,9 +250,9 @@ class StockPredictor:
         feature_names = [col for col in data.columns if not col.startswith('Target')]
         feature_data = data[feature_names]
 
-        print(f"PREDICTING - feature_names: {feature_names}")
-        print(f"PREDICTING - feature_data.columns: {list(feature_data.columns)}")
-        print(f"PREDICTING - scaler.feature_names_in_: {getattr(self.scaler, 'feature_names_in_', 'Not available')}")
+        #print(f"PREDICTING - feature_names: {feature_names}")
+        #print(f"PREDICTING - feature_data.columns: {list(feature_data.columns)}")
+        #print(f"PREDICTING - scaler.feature_names_in_: {getattr(self.scaler, 'feature_names_in_', 'Not available')}")
 
         #feature_data = self._ensure_feature_consistency(feature_data)
 
@@ -262,32 +262,32 @@ class StockPredictor:
             feature_data = feature_data.drop('SMA_200', axis=1)
             self.feature_columns = [i for i, col in enumerate(feature_names) if col != 'SMA_200']
         
-        print(f"After feature consistency - shape: {feature_data.shape}")
-        print(f"NaN count after consistency: {feature_data.isna().sum().sum()}")
+        #print(f"After feature consistency - shape: {feature_data.shape}")
+        #print(f"NaN count after consistency: {feature_data.isna().sum().sum()}")
 
         # Fill any remaining nans
         feature_data = feature_data.fillna(method='ffill').fillna(method='bfill')
         
-        print(f"Feature data sample:\n{feature_data.tail(2)}")
+        #print(f"Feature data sample:\n{feature_data.tail(2)}")
 
         data_scaled = self.scaler.transform(feature_data)
-        print(f"After scaling - shape: {data_scaled.shape}")
-        print(f"NaN count after scaling: {np.isnan(data_scaled).sum()}")
-        print(f"Data scaled sample: {data_scaled[-2:]}")
+        #print(f"After scaling - shape: {data_scaled.shape}")
+        #print(f"NaN count after scaling: {np.isnan(data_scaled).sum()}")
+        #print(f"Data scaled sample: {data_scaled[-2:]}")
 
 
         X = data_scaled[-self.backcandles:, self.feature_columns]
         X = X.reshape(1, self.backcandles, len(self.feature_columns))
 
-        print(f"X shape: {X.shape}")
-        print(f"NaN count in X: {np.isnan(X).sum()}")
+        #print(f"X shape: {X.shape}")
+        #print(f"NaN count in X: {np.isnan(X).sum()}")
 
         predictions_scaled = self.model.predict(X)
         print(f"Raw predictions_scaled: {predictions_scaled}")
-        print(f"NaN count in predictions_scaled: {np.isnan(predictions_scaled).sum()}")
+        #print(f"NaN count in predictions_scaled: {np.isnan(predictions_scaled).sum()}")
 
         predictions = self.target_scaler.inverse_transform(predictions_scaled.reshape(1,-1))[0]
-        print(f"Final Predictions: {predictions}")
+        #print(f"Final Predictions: {predictions}")
 
         return predictions.tolist()
     
