@@ -52,7 +52,7 @@ def get_current_positions() -> str:
         return f"Error getting positions: {str(e)}"
 
 @tool
-def place_market_BUY(symbol: str, qty: int, side: str) -> str:
+def place_market_BUY(symbol: str, qty: int) -> str:
     """Place a paper trade market BUY using Alpaca."""
     try:
         current_price = get_stock_price(symbol)
@@ -70,7 +70,7 @@ def place_market_BUY(symbol: str, qty: int, side: str) -> str:
         return f"Trade failed: {str(e)}"
 
 @tool
-def place_market_SELL(symbol: str, qty: int, side: str) -> str:
+def place_market_SELL(symbol: str, qty: int) -> str:
     """Place a paper trade market SELL using Alpaca."""
     try:
         current_price = get_stock_price(symbol)

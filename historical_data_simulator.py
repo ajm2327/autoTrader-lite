@@ -86,6 +86,9 @@ class HistoricalDataSimulator:
         self.decision_log_file = f"{log_dir}/{self.sim_id}_decisions.json"
         self.summary_file = f"{log_dir}/{self.sim_id}_summary.json"
 
+        # For time management
+        self.eastern = pytz.timezone('US/Eastern')
+
     def initialize(self):
         """Load historical data and prepare simulation"""
         try:
@@ -100,10 +103,9 @@ class HistoricalDataSimulator:
             lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')#timedelta(days=365*2)).strftime('%Y-%m-%d')
             
             target_date = datetime.strptime(self.end_date, '%Y-%m-%d')
-            eastern = pytz.timezone('US/Eastern')
 
             if target_date.date() == datetime.now().date():
-                current_time = eastern.localize(datetime.now())
+                current_time = self.eastern.localize(datetime.now())
                 print(f"current_time type: {type(current_time)}, value: {current_time}")
                 if current_time.time() < time(9,30):
                     print("❌ Market hasn't opened yet today")
@@ -111,7 +113,7 @@ class HistoricalDataSimulator:
                 end_time = current_time
                 self.is_live_day = True
             else:
-                end_time = eastern.localize(target_date.replace(hour=16, minute=0,second=0))
+                end_time = self.eastern.localize(target_date.replace(hour=16, minute=0,second=0))
                 self.is_live_day = False
 
             # Get full historical data
@@ -142,10 +144,10 @@ class HistoricalDataSimulator:
             
             # Separate training data from data period just for gemini
             if self.data.index.tz is None:
-                self.data.index = pd.to_datetime(self.data.index, utc = True).tz_convert(eastern)
-            elif self.data.index.tz != eastern:
-                self.data.index = self.data.index.tz_convert(eastern)
-            market_open = eastern.localize(target_date.replace(hour=9, minute=30))
+                self.data.index = pd.to_datetime(self.data.index, utc = True).tz_convert(self.eastern)
+            elif self.data.index.tz != self.eastern:
+                self.data.index = self.data.index.tz_convert(self.eastern)
+            market_open = self.eastern.localize(target_date.replace(hour=9, minute=30))
 
             sim_data = self.data[self.data.index >= market_open]
 
@@ -185,8 +187,8 @@ class HistoricalDataSimulator:
     
     def _is_market_open(self):
         """Check if market open"""
-        eastern = pytz.timezone('US/Eastern')
-        now = datetime.now(eastern)
+        #eastern = pytz.timezone('US/Eastern')
+        now = datetime.now(self.eastern)
 
         if now.weekday() >= 5:
             return False
@@ -342,6 +344,8 @@ class HistoricalDataSimulator:
         
         # Update current index
         self.current_index += chunk_size
+
+        current_time = self.eastern.localize(datetime.now())
         
         # Calculate metrics
         rvol = self.sim_get_rvol()
@@ -357,12 +361,18 @@ class HistoricalDataSimulator:
             Mean: ${lstm_prediction['mean_price']:.2f}"""
         else:
             prediction_text = '- LSTM Prediction: N/A'
+
+        replay_message = "REPLAY MODE - OBSERVATION ONLY" if self.is_replay else "LIVE DATA, TRADING AVAILABLE"
         
         # Format initial message without leading spaces
         message = f"""
 Retrieving historical stock information for {self.ticker}.
 
 Initial historical data summary:
+CURRENT REAL TIME: {self.eastern.localize(datetime.now())}
+
+{replay_message}
+
 - Date range: {initial_chunk.index.min()} to {initial_chunk.index.max()}
 - Current price: ${current_price:.2f}
 - Day's open: ${f"{open_price:.2f}" if open_price is not None else 'N/A'}
@@ -402,12 +412,14 @@ What is your trading decision?
 
             if not self._is_market_open():
                 print(" ⛔ Market is closed - end live trading session")
+                print(" Preparing to exit...")
                 return None
             
             self.is_replay = False
             fresh_data = get_alpaca_data(self.ticker)
             if fresh_data is None or fresh_data.empty:
                 print("❌ Couldn't get real time data")
+                print(" Simulation ending...")
                 return None
             self.data = pd.concat([self.data, fresh_data]).drop_duplicates()
 
@@ -456,6 +468,8 @@ What is your trading decision?
         replay_message = "REPLAY MODE - OBSERVATION ONLY" if self.is_replay else "LIVE DATA, TRADING AVAILABLE"
         # Format update message without leading spaces
         update_message = f"""
+CURRENT REAL TIME: {self.eastern.localize(datetime.now())}
+
 [Data Update] {self.ticker} at {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}:
 {replay_message}
 - Current price: ${current_price:.2f}
@@ -899,7 +913,7 @@ def data_node(state):
     
     # Initialize simulator if not exist
     if simulator is None:
-        ticker = state.get("ticker", "AMD") # Replace with whatever ticker to start with
+        ticker = state.get("ticker", "SPY")
         start_date = state.get("start_date", "2025-03-01")  # Historical data start
         end_date = state.get("end_date", "2025-04-17")      # Last day to simulate
         log_dir = state.get("log_dir", "simulation_logs")   # Directory for logs
@@ -984,12 +998,22 @@ def data_node(state):
             
             print("=" * 50)
             print("Simulation complete!")
+
+            if hasattr(sys.stdout, 'file'):
+                sys.stdout.file.close()
+            sys.exit(0)
+
             return state | {"finished": True}
 
         return state | {"messages": [next_message]}
     except Exception as e:
         print(f"❌ Error getting next update: {str(e)}")
         traceback.print_exc()
+        print(f"Exiting Program...")
+        if hasattr(sys.stdout, 'file'):
+            sys.stdout.file.close()
+        sys.exit(1)
+
         return state | {"finished": True}
 
 
@@ -1023,7 +1047,12 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
             self.stdout.flush()
             self.file.flush()
 
-    sys.stdout = TeeOutput('live_trading.log')
+        def close(self):
+            if hasattr(self, 'file') and self.file:
+                self.file.close()
+
+    tee_output = TeeOutput('live_trading.log')
+    sys.stdout = tee_output
 
     print(f"\n{'='*60}")
     print(f"🚀 STARTING HISTORICAL TRADING SIMULATION FOR {ticker}")
@@ -1069,6 +1098,8 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
         final_state = compiled_graph.invoke(initial_state, config)
         
         print("\n✅ Simulation completed successfully!")
+        tee_output.close()
+        sys.stdout = tee_output.stdout
         return final_state
         
     except Exception as e:
@@ -1079,6 +1110,9 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
             print(f"Try increasing max_iterations (current: {max_iterations}).")
         
         traceback.print_exc()
+
+        tee_output.close()
+        sys.stdout = tee_output.stdout
         return None
 
 
