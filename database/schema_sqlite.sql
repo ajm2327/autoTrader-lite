@@ -19,16 +19,16 @@ CREATE TABLE IF NOT EXISTS technical_indicators (
     indicator_id INTEGER PRIMARY KEY AUTOINCREMENT,
     data_id INTEGER REFERENCES historical_data(data_id) ON DELETE CASCADE,
     
-    sma_20 DECIMAL(12,4),
-    sma_50 DECIMAL(12,4),
-    sma_200 DECIMAL(12,4),
+    --sma_20 DECIMAL(12,4),
+    --sma_50 DECIMAL(12,4),
+    --sma_200 DECIMAL(12,4),
     rsi DECIMAL(5,2),
     macd DECIMAL(12,6),
     signal_line DECIMAL(12,6),
     middle_band DECIMAL(12,4),
     upper_band DECIMAL(12,4),
-    lower_band DECIMAL(12,4),
-    ema DECIMAL(12,4)
+    lower_band DECIMAL(12,4)
+    --ema DECIMAL(12,4)
     --emaf DECIMAL(12,4),
     --hist_volatility DECIMAL(10,6),
     --bb_width DECIMAL(10,6),

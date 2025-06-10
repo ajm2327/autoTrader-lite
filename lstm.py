@@ -321,8 +321,8 @@ class StockPredictor:
                 'max_price': np.max(predictions),
                 'min_price': np.min(predictions),
                 'final_price': predictions[-1],
-                'direction': 'UP' if predictions[-1] > current_price else 'DOWN',
-                'price_change_pct': ((predictions[-1] - current_price) / current_price) * 100,
+                'direction': 'UP' if predictions[0] > current_price else 'DOWN',
+                'price_change_pct': ((predictions[0] - current_price) / current_price) * 100,
                 'volatility': np.std(predictions),
                 'trend_strength': (predictions[-1] - predictions[0]) / predictions[0] * 100 if predictions[0] != 0 else 0,
                 'momentum': 'INCREASING' if len(predictions) > 2 and predictions[-1] > predictions[len(predictions)//2] else 'DECREASING'

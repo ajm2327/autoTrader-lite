@@ -37,9 +37,9 @@ class TechnicalIndicators(Base):
     indicator_id = Column(Integer, primary_key = True)
     data_id = Column(Integer, ForeignKey('historical_data.data_id', ondelete = 'CASCADE'), nullable=False)
 
-    sma_20 = Column(DECIMAL(12,4))
-    sma_50 = Column(DECIMAL(12,4))
-    sma_200 = Column(DECIMAL(12,4))
+    #sma_20 = Column(DECIMAL(12,4))
+    #sma_50 = Column(DECIMAL(12,4))
+    #sma_200 = Column(DECIMAL(12,4))
 
     rsi = Column(DECIMAL(5,2))
     macd = Column(DECIMAL(12,6))
@@ -50,7 +50,7 @@ class TechnicalIndicators(Base):
     upper_band = Column(DECIMAL(12,4))
     lower_band = Column(DECIMAL(12,4))
 
-    ema = Column(DECIMAL(12, 4))
+    #ema = Column(DECIMAL(12, 4))
 
 
     calculated_at = Column(DateTime(timezone=True), default=func.current_timestamp())

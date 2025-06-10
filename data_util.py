@@ -164,9 +164,9 @@ def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None)
 
     elif indicator_set == 'alternate':
         # Simple Moving Averages
-        data['SMA_20'] = data['Close'].rolling(window=20).mean()
-        data['SMA_50'] = data['Close'].rolling(window=50).mean()
-        data['SMA_200'] = data['Close'].rolling(window=200).mean()
+        #data['SMA_20'] = data['Close'].rolling(window=20).mean()
+        #data['SMA_50'] = data['Close'].rolling(window=50).mean()
+        #data['SMA_200'] = data['Close'].rolling(window=200).mean()
         
         # RSI (Relative Strength Index)
         delta = data['Close'].diff()
@@ -192,7 +192,7 @@ def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None)
         data['Lower_Band'] = data['Middle_Band'] - (std_dev * 2)
         
         # Add EMA
-        data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()
+        #data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()
     
     else:
         raise ValueError("Invalid indicator set. Use 'default' or 'alternate'.")
@@ -218,19 +218,19 @@ def get_alpaca_data(ticker, start_date=None, end_date=None, is_paper=True, times
         # Convert date strings to datetime
         eastern  = pytz.timezone('US/Eastern')
         if start_date is None:
-            start = eastern.localize(datetime.now() - timedelta(minutes=5))
+            start = datetime.now(eastern) - timedelta(minutes=5)        
         else:
             start = datetime.strptime(start_date, '%Y-%m-%d')
             start = eastern.localize(datetime.combine(start.date(), datetime.min.time()))
 
         if end_date is None:
-            end = eastern.localize(datetime.now())
+            end = datetime.now(eastern)
         else:
             end = datetime.strptime(end_date, '%Y-%m-%d')
             end = eastern.localize(datetime.combine(end.date(), datetime.max.time()))
             # if end date is today, adjust
             if end.date() == datetime.now().date():
-                end = eastern.localize(datetime.now())
+                end = datetime.now(eastern)
 
 
         print(f"GETTING DATA FROM {start} to {end}")
@@ -345,15 +345,15 @@ def _update_indicators_in_database(ticker, df):
                 # update or create indicators
                 indicators = TechnicalIndicators(
                     data_id = historical_record.data_id,
-                    sma_20 = row.get('SMA_20'),
-                    sma_50 = row.get('SMA_50'),
+                    #sma_20 = row.get('SMA_20'),
+                    #sma_50 = row.get('SMA_50'),
                     rsi = row.get('RSI'),
                     macd = row.get('MACD'),
                     signal_line=row.get('Signal_Line'),
                     middle_band = row.get('Middle_Band'),
                     upper_band = row.get('Upper_Band'),
-                    lower_band = row.get('Lower_Band'),
-                    ema = row.get('EMA')
+                    lower_band = row.get('Lower_Band')
+                    #ema = row.get('EMA')
                 )
                 session.add(indicators)
 

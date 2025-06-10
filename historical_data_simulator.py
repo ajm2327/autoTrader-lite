@@ -105,7 +105,7 @@ class HistoricalDataSimulator:
             target_date = datetime.strptime(self.end_date, '%Y-%m-%d')
 
             if target_date.date() == datetime.now().date():
-                current_time = self.eastern.localize(datetime.now())
+                current_time = datetime.now(self.eastern)
                 print(f"current_time type: {type(current_time)}, value: {current_time}")
                 if current_time.time() < time(9,30):
                     print("❌ Market hasn't opened yet today")
@@ -345,7 +345,7 @@ class HistoricalDataSimulator:
         # Update current index
         self.current_index += chunk_size
 
-        current_time = self.eastern.localize(datetime.now())
+        current_time = datetime.now(self.eastern)
         
         # Calculate metrics
         rvol = self.sim_get_rvol()
@@ -369,9 +369,9 @@ class HistoricalDataSimulator:
 Retrieving historical stock information for {self.ticker}.
 
 Initial historical data summary:
-CURRENT REAL TIME: {self.eastern.localize(datetime.now())}
+CURRENT REAL TIME: {datetime.now(self.eastern)}
 
-{replay_message}
+IMPORTANT: {replay_message}
 
 - Date range: {initial_chunk.index.min()} to {initial_chunk.index.max()}
 - Current price: ${current_price:.2f}
@@ -388,12 +388,18 @@ Indicators:
 - RSI: {initial_chunk.iloc[-1]['RSI']:.2f}
 - MACD: {initial_chunk.iloc[-1]['MACD']:.4f}
 - Signal Line: {initial_chunk.iloc[-1]['Signal_Line']:.4f}
-- SMA_20: ${initial_chunk.iloc[-1]['SMA_20']:.2f}
-- SMA_50: ${initial_chunk.iloc[-1]['SMA_50']:.2f}
 - RVOL: {rvol:.2f}
+- Upper Bollinger Band: {initial_chunk.iloc[-1]['Upper_Band']:.2f}
+- Middle Bollinger Band: {initial_chunk.iloc[-1]['Middle_Band']:.2f}
+- Lower Bollinger Band: {initial_chunk.iloc[-1]['Lower_Band']:.2f}
 
 What is your trading decision?
 """
+# I removed these indicators because they depend on daily candles: 
+#- SMA_20: ${initial_chunk.iloc[-1]['SMA_20']:.2f}
+#- SMA_50: ${initial_chunk.iloc[-1]['SMA_50']:.2f}
+
+
         print("\n🔵 INITIAL DATA SENT TO AGENT:")
         print("=" * 50)
         print(message)
@@ -416,11 +422,16 @@ What is your trading decision?
                 return None
             
             self.is_replay = False
-            fresh_data = get_alpaca_data(self.ticker)
+            fresh_data = get_alpaca_data(self.ticker, store_in_db = False)
             if fresh_data is None or fresh_data.empty:
                 print("❌ Couldn't get real time data")
                 print(" Simulation ending...")
                 return None
+            if fresh_data.index.tz is None:
+                fresh_data.index = pd.to_datetime(fresh_data.index, utc = True).tz_convert(self.eastern)
+            elif fresh_data.index.tz != self.eastern:
+                fresh_data.index = fresh_data.index.tz_convert(self.eastern)
+                
             self.data = pd.concat([self.data, fresh_data]).drop_duplicates()
 
             self.data = add_indicators(self.data, indicator_set='alternate')
@@ -430,7 +441,7 @@ What is your trading decision?
         
 
             self.current_index = len(self.data)
-            time_module.sleep(60)
+            time_module.sleep(self.interval_seconds)
         
         else:
             self.is_replay = True
@@ -468,10 +479,12 @@ What is your trading decision?
         replay_message = "REPLAY MODE - OBSERVATION ONLY" if self.is_replay else "LIVE DATA, TRADING AVAILABLE"
         # Format update message without leading spaces
         update_message = f"""
-CURRENT REAL TIME: {self.eastern.localize(datetime.now())}
+CURRENT REAL TIME: {datetime.now(self.eastern)}
 
 [Data Update] {self.ticker} at {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}:
-{replay_message}
+
+IMPORTANT: {replay_message}
+
 - Current price: ${current_price:.2f}
 - {self.ticker} is {change_direction} {abs(change_pct):.2f}% today (from ${f"{open_price:.2f}" if open_price is not None else 'N/A'} to ${current_price:.2f})
 {'='*60}
@@ -485,13 +498,18 @@ Indicators:
 - RSI: {next_chunk.iloc[-1]['RSI']:.2f}
 - MACD: {next_chunk.iloc[-1]['MACD']:.4f}
 - Signal Line: {next_chunk.iloc[-1]['Signal_Line']:.4f}
-- SMA_20: ${next_chunk.iloc[-1]['SMA_20']:.2f}
-- SMA_50: ${next_chunk.iloc[-1]['SMA_50']:.2f}
 - VWAP: ${next_chunk.iloc[-1]['vwap']:.2f}
 - RVOL: {rvol:.2f}
+- Upper Bollinger Band: {next_chunk.iloc[-1]['Upper_Band']:.2f}
+- Middle Bollinger Band: {next_chunk.iloc[-1]['Middle_Band']:.2f}
+- Lower Bollinger Band: {next_chunk.iloc[-1]['Lower_Band']:.2f}
 
 Based on this data, what is your next decision?
 """
+# I removed these indicators because they are only useful for daily candles
+#- SMA_20: ${next_chunk.iloc[-1]['SMA_20']:.2f}
+#- SMA_50: ${next_chunk.iloc[-1]['SMA_50']:.2f}        
+
         print("\n🔄 DATA UPDATE SENT TO AGENT:")
         print(f'{'='*60}')
         #print(f"Time: {next_chunk.index[-1].strftime('%Y-%m-%d %H:%M:%S')}")
@@ -669,16 +687,16 @@ Based on this data, what is your next decision?
             if record.indicators:
                 indicator = record.indicators[0]
                 row.update({
-                    'SMA_20': float(indicator.sma_20) if indicator.sma_20 else None,
-                    'SMA_50': float(indicator.sma_50) if indicator.sma_50 else None,
-                    'SMA_200': float(indicator.sma_200) if indicator.sma_200 else None,
+                    #'SMA_20': float(indicator.sma_20) if indicator.sma_20 else None,
+                    #'SMA_50': float(indicator.sma_50) if indicator.sma_50 else None,
+                    #'SMA_200': float(indicator.sma_200) if indicator.sma_200 else None,
                     'RSI': float(indicator.rsi) if indicator.rsi else None,
                     'MACD': float(indicator.macd) if indicator.macd else None,
                     'Signal_Line': float(indicator.signal_line) if indicator.signal_line else None,
                     'Middle_Band': float(indicator.middle_band) if indicator.middle_band else None,
                     'Upper_Band': float(indicator.upper_band) if indicator.upper_band else None,
-                    'Lower_Band': float(indicator.lower_band) if indicator.lower_band else None,
-                    'EMA': float(indicator.ema) if indicator.ema else None,
+                    'Lower_Band': float(indicator.lower_band) if indicator.lower_band else None
+                    #'EMA': float(indicator.ema) if indicator.ema else None,
                 })
 
             data.append(row)
@@ -999,6 +1017,20 @@ def data_node(state):
             print("=" * 50)
             print("Simulation complete!")
 
+            try:
+                if hasattr(simulator, 'cumulative_data') and not simulator.cumulative_data.empty:
+                    print(f"\n Storing {len(simulator.cumulative_data)} live data records to database...")
+
+                    _store_dataframe_in_database(simulator.ticker, simulator.cumulative_data)
+                    _update_indicators_in_database(simulator.ticker, simulator.cumulative_data)
+
+                    print(" Session stored")
+                else:
+                    print(" No live data to store")
+            except Exception as e:
+                print(f"    Error storing live data in database: {str(e)}")
+                traceback.print_exc()
+            
             if hasattr(sys.stdout, 'file'):
                 sys.stdout.file.close()
             sys.exit(0)
@@ -1127,5 +1159,5 @@ if __name__ == "__main__":
     final_state = run_historical_simulation(
         ticker="SPY",
         start_date="2025-03-01",
-        end_date="2025-06-06"
+        end_date="2025-06-10"
     )
