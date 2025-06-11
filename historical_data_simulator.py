@@ -1159,5 +1159,5 @@ if __name__ == "__main__":
     final_state = run_historical_simulation(
         ticker="SPY",
         start_date="2025-03-01",
-        end_date="2025-06-10"
+        end_date="2025-06-11"
     )

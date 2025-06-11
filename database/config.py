@@ -1,5 +1,5 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import sessionmaker, declarative_base
 from sqlalchemy.pool import QueuePool
 from contextlib import contextmanager
@@ -37,12 +37,25 @@ class DatabaseConfig:
         try:
             self.engine = create_engine(
                 self.get_database_url(),
+                echo = False,
+                connect_args = {
+                    "check_same_thread": False,
+                    "timeout":20
+                }
                 #poolclass = QueuePool,
                 #pool_size = self.POOL_SIZE,
                 #max_overflow = self.MAX_OVERFLOW,
                 #pool_timeout = self.POOL_TIMEOUT,
-                echo = False
             )
+
+            @event.listens_for(self.engine, "connect")
+            def sqlite_pragma(dbapi_connection, connection_record):
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode = WAL")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.execute("PRAGMA cache_size=10000")
+                cursor.execute("PRAGMA temp_store=memory")
+                cursor.close()
 
             self.SessionLocal = sessionmaker(
                 autocommit = False,
