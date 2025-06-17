@@ -438,17 +438,38 @@ What is your trading decision?
             
             self.is_replay = False
             last_historical_time = self.data.index[-1]
-            
+
             fresh_data = get_alpaca_data(self.ticker, start_date = last_historical_time.strftime('%Y-%m-%d %H:%M:%S'), end_date=None, store_in_db = False)
             if fresh_data is None or fresh_data.empty:
                 print("❌ Couldn't get real time data")
                 print(" Simulation ending...")
                 return None
+            
+            print(f"🔍 DEBUG: Raw fresh_data timezone: {fresh_data.index.tz}")
+            print(f"🔍 DEBUG: Raw fresh_data first timestamp: {fresh_data.index[0]}")
+            print(f"🔍 DEBUG: Raw fresh_data last timestamp: {fresh_data.index[-1]}")
+            print(f"🔍 DEBUG: Historical data last timestamp: {last_historical_time}")
+
             if fresh_data.index.tz is None:
+                print("🔍 DEBUG: Converting from naive to UTC then Eastern")
                 fresh_data.index = pd.to_datetime(fresh_data.index, utc = True).tz_convert(self.eastern)
             elif fresh_data.index.tz != self.eastern:
+                print(f"🔍 DEBUG: Converting from {fresh_data.index.tz} to {self.eastern}")
                 fresh_data.index = fresh_data.index.tz_convert(self.eastern)
-                
+            else:
+                print("🔍 DEBUG: Fresh data already in Eastern timezone")
+
+            # DEBUG: Check after conversion
+            print(f"🔍 DEBUG: Converted fresh_data timezone: {fresh_data.index.tz}")
+            print(f"🔍 DEBUG: Converted fresh_data first timestamp: {fresh_data.index[0]}")
+            print(f"🔍 DEBUG: Converted fresh_data last timestamp: {fresh_data.index[-1]}")
+
+            # DEBUG: Check time gap
+            time_gap = fresh_data.index[0] - last_historical_time
+            print(f"🔍 DEBUG: Time gap between historical and fresh: {time_gap}")
+            print(f"🔍 DEBUG: Gap in minutes: {time_gap.total_seconds() / 60}")
+
+            
             self.data = pd.concat([self.data, fresh_data]).drop_duplicates()
 
             self.data = add_indicators(self.data, indicator_set='alternate')
