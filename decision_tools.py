@@ -12,6 +12,7 @@ from alpaca.trading.enums import OrderSide, TimeInForce, AssetClass, AssetStatus
 from alpaca.trading.enums import AssetClass
 import requests
 from bs4 import BeautifulSoup
+import json
 
 from data_util import get_alpaca_data, add_indicators, dataframe_info, get_stock_price, scrape_float
 
@@ -65,9 +66,28 @@ def place_market_BUY(symbol: str, qty: int) -> str:
         BUY_order = trading_client.submit_order(
                     order_data=market_order_data
                    )
-        return f"Order placed: {BUY_order.id} - {side.upper()} {qty} {symbol} @ {current_price}"
+        
+        trade_log = {
+            "timestamp": str(datetime.now()),
+            "action": "BUY",
+            "symbol": symbol,
+            "qty": qty,
+            "price": current_price,
+            "order_id": BUY_order.id
+        }
+        
+        # Append to live trading log
+        with open("live_trades.json", "a") as f:
+            f.write(json.dumps(trade_log) + "\n")
+
+        
+        result = f"Order placed: {BUY_order.id} - BUY {qty} {symbol} @ {current_price}"
+        print(f"🔨 Tool Result: {result}")
+        return result
     except Exception as e:
-        return f"Trade failed: {str(e)}"
+        error_msg = f"Trade failed: {str(e)}"
+        print(f"🔨 Tool Error: {error_msg}")
+        return error_msg
 
 @tool
 def place_market_SELL(symbol: str, qty: int) -> str:
@@ -83,9 +103,27 @@ def place_market_SELL(symbol: str, qty: int) -> str:
         SELL_order = trading_client.submit_order(
                     order_data=market_order_data
                    )
-        return f"Order placed: {SELL_order.id} - {side.upper()} {qty} {symbol} @ {current_price}"
+        
+        trade_log = {
+            "timestamp": str(datetime.now()),
+            "action": "SELL",
+            "symbol": symbol,
+            "qty": qty,
+            "price": current_price,
+            "order_id": SELL_order.id
+        }
+        
+        # Append to live trading log
+        with open("live_trades.json", "a") as f:
+            f.write(json.dumps(trade_log) + "\n")
+
+        result= f"Order placed: {SELL_order.id} - SELL {qty} {symbol} @ {current_price}"
+        print(f"🔨 Tool Result: {result}")
+        return result
     except Exception as e:
-        return f"Trade failed: {str(e)}"
+        error_msg= f"Trade failed: {str(e)}"
+        print(f"🔨 Tool Error: {error_msg}")
+        return error_msg
 
 
 

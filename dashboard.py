@@ -6,10 +6,37 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from plotting_utils import plot_technical_indicators, show_data_summary
 import re
+import html
+import json
+
 
 st.set_page_config(page_title='Lite Trading Agent', layout='wide')
 
 st.title('Trading Agent Dashboard')
+st.markdown('---')
+
+st.subheader("🗨️ Send Message to Agent")
+human_input_col1, human_input_col2 = st.columns([3,1])
+
+with human_input_col1:
+    human_message = st.text_input("Message to include with next data update:",
+                                  placeholder =  "e.g., 'What's your current position?'")
+
+with human_input_col2:
+    if st.button("📎Attach Message", type="primary"):
+        if human_message.strip():
+            with open('human_input_queue.txt', 'w') as f:
+                f.write(human_message.strip())
+            st.success("Message queued for next update")
+            time.sleep(1)
+            st.rerun()
+
+if os.path.exists('human_input_queue.txt'):
+    with open('human_input_queue.txt', 'r') as f:
+        pending_msg = f.read().strip()
+    if pending_msg:
+        st.info(f" Pending message: \"{pending_msg}\"")
+
 st.markdown('---')
 
 log_col, plot_col = st.columns([1,1])
@@ -90,11 +117,15 @@ with log_col:
             
             if latest_data_update:
                 st.markdown("### 📊 Latest Market Data")
-                st.markdown(f"```\n{latest_data_update}\n```")
+                st.code(
+                    latest_data_update, 
+                    language = None,
+                    height=300
+                )
             
             if latest_agent_decision:
                 st.markdown("### 🧠 Latest Agent Decision")
-                st.markdown(latest_agent_decision)
+                st.text(latest_agent_decision)
             
             if not latest_data_update and not latest_agent_decision:
                 st.info("No recent trading activity found in logs")

@@ -407,6 +407,21 @@ What is your trading decision?
         return HumanMessage(content=message)
 
     
+    def check_for_human_input(self):
+        """Check for human message"""
+        human_message = ""
+        if os.path.exists('human_input_queue.txt'):
+            try:
+                with open('human_input_queue.txt', 'r') as f:
+                    human_message = f.read().strip()
+                if human_message:
+                    os.remove('human_input_queue.txt')
+                    return f"\n\n🗨️ MESSAGE FROM HUMAN: {human_message}\n"
+                
+            except Exception as e:
+                print(f"Error reading human input: {e}")
+        return ""
+    
     def get_next_update(self):
         """Get the next data update based on the simulation index"""
         if not self.initialized:
@@ -477,6 +492,9 @@ What is your trading decision?
             prediction_text = '- LSTM Prediction: N/A'
 
         replay_message = "REPLAY MODE - OBSERVATION ONLY" if self.is_replay else "LIVE DATA, TRADING AVAILABLE"
+
+        human_input = self.check_for_human_input()
+
         # Format update message without leading spaces
         update_message = f"""
 CURRENT REAL TIME: {datetime.now(self.eastern)}
@@ -502,7 +520,7 @@ Indicators:
 - RVOL: {rvol:.2f}
 - Upper Bollinger Band: {next_chunk.iloc[-1]['Upper_Band']:.2f}
 - Middle Bollinger Band: {next_chunk.iloc[-1]['Middle_Band']:.2f}
-- Lower Bollinger Band: {next_chunk.iloc[-1]['Lower_Band']:.2f}
+- Lower Bollinger Band: {next_chunk.iloc[-1]['Lower_Band']:.2f}{human_input}
 
 Based on this data, what is your next decision?
 """
@@ -740,6 +758,7 @@ Based on this data, what is your next decision?
             _update_indicators_in_database(self.ticker, df)
             remove_duplicate_records(self.ticker)
         return df
+    
 
 
 class PersistentLogger:
@@ -1096,7 +1115,13 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
     print(f"⚙️ Max iterations: {max_iterations}")
     print(f"{'='*60}\n")
     
+    
     try:
+        # create tool set:
+        tools = [get_account, place_market_BUY, place_market_SELL, get_current_positions]
+        llm_with_tools = get_llm_with_tools(tools)
+        tool_node = get_tool_node(tools)
+
         # CREATE GRAPH
         graph = StateGraph(DecisionState)
         graph.add_node("data_node", data_node)
@@ -1120,7 +1145,8 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
             "start_date": start_date,
             "end_date": end_date,
             "log_dir": log_dir,
-            "simulator": None
+            "simulator": None,
+            "llm_with_tools": llm_with_tools
         }
         
         # Set recursion limit
@@ -1150,12 +1176,6 @@ def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2
 
 
 if __name__ == "__main__":
-    tools = [get_account, place_market_BUY, place_market_SELL, get_current_positions]
-     
-    # Create LLM and bind tools
-    # Use centralized LLM creation
-    llm_with_tools = get_llm_with_tools(tools)
-    tool_node = get_tool_node(tools)
     end_date = str(datetime.now().date())
     final_state = run_historical_simulation(
         ticker="SPY",
