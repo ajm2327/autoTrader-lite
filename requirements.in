@@ -21,3 +21,5 @@ psycopg2-binary
 streamlit
 matplotlib
 seaborn
+pandas_market_calendars
+schedule

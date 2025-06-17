@@ -1156,8 +1156,9 @@ if __name__ == "__main__":
     # Use centralized LLM creation
     llm_with_tools = get_llm_with_tools(tools)
     tool_node = get_tool_node(tools)
+    end_date = str(datetime.now().date())
     final_state = run_historical_simulation(
         ticker="SPY",
         start_date="2025-03-01",
-        end_date="2025-06-11"
+        end_date=end_date
     )

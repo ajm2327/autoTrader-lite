@@ -6,7 +6,7 @@ services:
     container_name: auto_trader_main
     volumes:
       - .:/app
-    command: python historical_data_simulator.py
+    command: python market_scheduler.py
     restart: always
 
   dashboard:
