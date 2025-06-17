@@ -220,16 +220,24 @@ def get_alpaca_data(ticker, start_date=None, end_date=None, is_paper=True, times
         if start_date is None:
             start = datetime.now(eastern) - timedelta(minutes=5)        
         else:
-            start = datetime.strptime(start_date, '%Y-%m-%d')
-            start = eastern.localize(datetime.combine(start.date(), datetime.min.time()))
+            try:
+                naive_start = datetime.strptime(start_date, '%Y-%m-%d %H:%M:%S')
+                start = eastern.localize(naive_start)
+            except ValueError:
+                naive_start = datetime.strptime(start_date, '%Y-%m-%d')
+                start = eastern.localize(datetime.combine(naive_start.date(), datetime.min.time()))
 
         if end_date is None:
             end = datetime.now(eastern)
         else:
-            end = datetime.strptime(end_date, '%Y-%m-%d')
-            end = eastern.localize(datetime.combine(end.date(), datetime.max.time()))
+            try:
+                naive_end = datetime.strptime(end_date, '%Y-%m-%d %H:%M:%S')
+                end = eastern.localize(naive_end)
+            except ValueError:
+                naive_end = datetime.strptime(end_date, '%Y-%m-%d')
+                end = eastern.localize(datetime.combine(naive_end.date(), datetime.max.time()))
             # if end date is today, adjust
-            if end.date() == datetime.now().date():
+            if naive_end.date() == datetime.now().date():
                 end = datetime.now(eastern)
 
 

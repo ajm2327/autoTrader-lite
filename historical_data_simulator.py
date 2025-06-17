@@ -437,7 +437,9 @@ What is your trading decision?
                 return None
             
             self.is_replay = False
-            fresh_data = get_alpaca_data(self.ticker, store_in_db = False)
+            last_historical_time = self.data.index[-1]
+            
+            fresh_data = get_alpaca_data(self.ticker, start_date = last_historical_time.strftime('%Y-%m-%d %H:%M:%S'), end_date=None, store_in_db = False)
             if fresh_data is None or fresh_data.empty:
                 print("❌ Couldn't get real time data")
                 print(" Simulation ending...")
