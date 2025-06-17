@@ -107,8 +107,6 @@ class MarketScheduler:
             logger.info("🟩 Market Open - Starting Trading Simulator")
             self.simulator_process = subprocess.Popen(
                 ["python", "historical_data_simulator.py"],
-                stdout = subprocess.PIPE,
-                stderr = subprocess.PIPE,
                 cwd = os.getcwd()
             )
             self.is_running = True
