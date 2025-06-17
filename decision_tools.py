@@ -73,7 +73,7 @@ def place_market_BUY(symbol: str, qty: int) -> str:
             "symbol": symbol,
             "qty": qty,
             "price": current_price,
-            "order_id": BUY_order.id
+            "order_id": str(BUY_order.id)
         }
         
         # Append to live trading log
@@ -110,7 +110,7 @@ def place_market_SELL(symbol: str, qty: int) -> str:
             "symbol": symbol,
             "qty": qty,
             "price": current_price,
-            "order_id": SELL_order.id
+            "order_id": str(SELL_order.id)
         }
         
         # Append to live trading log

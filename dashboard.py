@@ -107,6 +107,8 @@ def is_simulation_running():
 with log_col:
     st.subheader("Latest Trading Activity")
     log_file = 'live_trading.log'
+    market_data_container = st.empty()
+    agent_decision_container = st.empty()
     
     if os.path.exists(log_file):
         with open(log_file, 'r') as f:
@@ -116,16 +118,18 @@ with log_col:
             latest_data_update, latest_agent_decision = parse_latest_messages(log_content)
             
             if latest_data_update:
-                st.markdown("### 📊 Latest Market Data")
-                st.code(
-                    latest_data_update, 
-                    language = None,
-                    height=300
-                )
+                with market_data_container.container():
+                    st.markdown("### 📊 Latest Market Data")
+                    st.code(
+                        latest_data_update, 
+                        language = None,
+                        height=300
+                    )
             
             if latest_agent_decision:
-                st.markdown("### 🧠 Latest Agent Decision")
-                st.text(latest_agent_decision)
+                with agent_decision_container.container():
+                    st.markdown("### 🧠 Latest Agent Decision")
+                    st.text(latest_agent_decision)
             
             if not latest_data_update and not latest_agent_decision:
                 st.info("No recent trading activity found in logs")
@@ -136,36 +140,37 @@ with log_col:
 
 with plot_col:
     st.subheader("Current Market Data")
-    
-    # Check if simulation is running and data file exists
-    if is_simulation_running() and os.path.exists('current_data_chunk.csv'):
-        try:
-            current_data = pd.read_csv('current_data_chunk.csv', index_col=0, parse_dates=True)
-            fig = plot_technical_indicators(current_data, "SPY")
-            st.pyplot(fig)
-            plt.close(fig)
-
-            st.text(f"Data points: {len(current_data)}")
-            st.text(f"Current price: ${current_data['Close'].iloc[-1]:.2f}")
-            st.text(f"Time range: {current_data.index[0]} to {current_data.index[-1]}")
-        except Exception as e:
-            st.error(f"Error loading agent data: {str(e)}")
-    else:
-        # Clean up old data file if simulation isn't running
-        if os.path.exists('current_data_chunk.csv') and not is_simulation_running():
+    plot_container = st.empty()
+    with plot_container.container():
+        # Check if simulation is running and data file exists
+        if is_simulation_running() and os.path.exists('current_data_chunk.csv'):
             try:
-                os.remove('current_data_chunk.csv')
-            except:
-                pass
-        
-        st.info("No active simulation detected")
-        st.markdown("""
-        **To start the simulation:**
-        1. Ensure `python market_scheduler.py` in your terminal
-        2. The dashboard will automatically update when data becomes available during market hours
-        
-        **Status:** Waiting for trading agent to start...
-        """)
+                current_data = pd.read_csv('current_data_chunk.csv', index_col=0, parse_dates=True)
+                fig = plot_technical_indicators(current_data, "SPY")
+                st.pyplot(fig)
+                plt.close(fig)
+
+                st.text(f"Data points: {len(current_data)}")
+                st.text(f"Current price: ${current_data['Close'].iloc[-1]:.2f}")
+                st.text(f"Time range: {current_data.index[0]} to {current_data.index[-1]}")
+            except Exception as e:
+                st.error(f"Error loading agent data: {str(e)}")
+        else:
+            # Clean up old data file if simulation isn't running
+            if os.path.exists('current_data_chunk.csv') and not is_simulation_running():
+                try:
+                    os.remove('current_data_chunk.csv')
+                except:
+                    pass
+            
+            st.info("No active simulation detected")
+            st.markdown("""
+            **To start the simulation:**
+            1. Ensure `python market_scheduler.py` in your terminal
+            2. The dashboard will automatically update when data becomes available during market hours
+            
+            **Status:** Waiting for trading agent to start...
+            """)
 
 # Auto-refresh every 2 seconds
 time.sleep(2)
