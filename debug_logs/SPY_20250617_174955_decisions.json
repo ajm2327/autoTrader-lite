@@ -1,0 +1,50 @@
+[
+  {
+    "time": "2025-06-17 09:39:00-04:00",
+    "price": 600.515,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 09:49:00-04:00",
+    "price": 600.235,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 09:59:00-04:00",
+    "price": 600.75,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 10:09:00-04:00",
+    "price": 601.15,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 10:19:00-04:00",
+    "price": 601.27,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 10:29:00-04:00",
+    "price": 601.175,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 10:30:00-04:00",
+    "price": 601.27,
+    "decision": "HOLD - Monitoring price action",
+    "position_change": "NO CHANGE"
+  },
+  {
+    "time": "2025-06-17 10:30:00-04:00",
+    "price": 601.27,
+    "decision": "HOLD - Continuing to monitor",
+    "position_change": "NO CHANGE"
+  }
+]

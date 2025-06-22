@@ -444,11 +444,6 @@ What is your trading decision?
                 print("❌ Couldn't get real time data")
                 print(" Simulation ending...")
                 return None
-            
-            print(f"🔍 DEBUG: Raw fresh_data timezone: {fresh_data.index.tz}")
-            print(f"🔍 DEBUG: Raw fresh_data first timestamp: {fresh_data.index[0]}")
-            print(f"🔍 DEBUG: Raw fresh_data last timestamp: {fresh_data.index[-1]}")
-            print(f"🔍 DEBUG: Historical data last timestamp: {last_historical_time}")
 
             if fresh_data.index.tz is None:
                 print("🔍 DEBUG: Converting from naive to UTC then Eastern")
@@ -459,26 +454,15 @@ What is your trading decision?
             else:
                 print("🔍 DEBUG: Fresh data already in Eastern timezone")
 
-            # DEBUG: Check after conversion
-            print(f"🔍 DEBUG: Converted fresh_data timezone: {fresh_data.index.tz}")
-            print(f"🔍 DEBUG: Converted fresh_data first timestamp: {fresh_data.index[0]}")
-            print(f"🔍 DEBUG: Converted fresh_data last timestamp: {fresh_data.index[-1]}")
-
-            # DEBUG: Check time gap
-            time_gap = fresh_data.index[0] - last_historical_time
-            print(f"🔍 DEBUG: Time gap between historical and fresh: {time_gap}")
-            print(f"🔍 DEBUG: Gap in minutes: {time_gap.total_seconds() / 60}")
-
             
             self.data = pd.concat([self.data, fresh_data]).drop_duplicates()
 
             self.data = add_indicators(self.data, indicator_set='alternate')
 
-            chunk_size = min(self.chunk_size, len(self.data))
-            next_chunk = self.data.iloc[-chunk_size:]
-        
-
-            self.current_index = len(self.data)
+            chunk_size = min(self.chunk_size, len(self.data) - self.current_index)
+            next_chunk = self.data.iloc[self.current_index:self.current_index + chunk_size]
+            self.current_index += chunk_size
+            
             time_module.sleep(self.interval_seconds)
         
         else:
