@@ -969,7 +969,7 @@ def data_node(state):
         print("=" * 50)
         
         simulator = HistoricalDataSimulator(ticker, start_date, end_date, 
-                                           interval_seconds=5, 
+                                           interval_seconds=15, 
                                            log_dir=log_dir)
         state["simulator"] = simulator
 
@@ -1078,7 +1078,7 @@ def data_node(state):
 
 
 def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2025-04-17", 
-                             max_iterations=200, log_dir="simulation_logs"):
+                             max_iterations=999, log_dir="simulation_logs"):
     """
     Run a historical data simulation for a specified ticker and date range,
     focusing on the last day's price action.

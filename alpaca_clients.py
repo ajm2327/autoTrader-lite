@@ -1,7 +1,7 @@
 # clients.py
 from alpaca.data.historical import StockHistoricalDataClient
 from alpaca.trading.client import TradingClient
-from config import ALPACA_API_KEY, ALPACA_API_SECRET
+from config import ALPACA_API_KEY, ALPACA_API_SECRET, GOOGLE_API_KEY
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langgraph.prebuilt import ToolNode
@@ -15,7 +15,7 @@ trading_client = TradingClient(
     paper=True
 )
 
-llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash")
+llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", google_api_key=GOOGLE_API_KEY)
 
 
 def get_llm_with_tools(tools):
