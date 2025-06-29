@@ -969,7 +969,7 @@ def data_node(state):
         print("=" * 50)
         
         simulator = HistoricalDataSimulator(ticker, start_date, end_date, 
-                                           interval_seconds=15, 
+                                           interval_seconds=3, 
                                            log_dir=log_dir)
         state["simulator"] = simulator
 
