@@ -109,6 +109,27 @@ def parse_percentage(val):
         return float(val.replace('%', '').strip())
     except:
         return None
+    
+def calculate_rsi(data, period=14):
+    delta = data.diff()
+    gain = delta.where(delta > 0,0)
+    loss = -delta.where(delta < 0,0)
+
+    # First values for simple mean
+    avg_gain = gain.rolling(window=period, min_periods=period).mean()
+    avg_loss = loss.rolling(window=period, min_periods=period).mean()
+
+    # wilder's smoothing for subsequent values
+    for i in range(period, len(data)):
+        avg_gain.iloc[i] = (avg_gain.iloc[i-1] * (period-1) + gain.iloc[i]) / period
+        avg_loss.iloc[i] = (avg_loss.iloc[i-1] * (period-1) + loss.iloc[i]) / period
+
+    rs = avg_gain / avg_loss.replace(0, np.nan)
+    rsi = 100 - (100 / (1 + rs))
+
+    return rsi.fillna(50)
+
+
 
 # ADD INDICATOR FUNCTION FOR HISTORICAL DATA RETRIEVAL: 
 def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None):
@@ -125,11 +146,7 @@ def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None)
     """
     if indicator_set == 'default':
         # RSI calculation
-        delta = data['Close'].diff()
-        gain = (delta.where(delta > 0, 0)).rolling(window=15).mean()
-        loss = (-delta.where(delta < 0, 0)).rolling(window=15).mean()
-        rs = gain / loss
-        data['RSI'] = 100 - (100 / (1 + rs))
+        data['RSI'] = calculate_rsi(data['Close'])
 
         # EMA calculations
         data['EMAF'] = data['Close'].ewm(span=20, adjust=False).mean()
@@ -169,15 +186,7 @@ def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None)
         #data['SMA_200'] = data['Close'].rolling(window=200).mean()
         
         # RSI (Relative Strength Index)
-        delta = data['Close'].diff()
-        gain = delta.where(delta > 0, 0)
-        loss = -delta.where(delta < 0, 0)
-        
-        avg_gain = gain.rolling(window=14).mean()
-        avg_loss = loss.rolling(window=14).mean()
-        
-        rs = avg_gain / avg_loss
-        data['RSI'] = 100 - (100 / (1 + rs))
+        data['RSI'] = calculate_rsi(data['Close'], period=14)
         
         # MACD (Moving Average Convergence Divergence)
         ema_12 = data['Close'].ewm(span=12, adjust=False).mean()

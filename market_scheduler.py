@@ -152,7 +152,7 @@ class MarketScheduler:
             poll_result = self.simulator_process.poll()
             if poll_result is not None:
                 logger.warning(f"Trading simulator process died with return code: {poll_result}")
-                self.simulator_proecss = None
+                self.simulator_process = None
                 self.is_running = False
 
 
