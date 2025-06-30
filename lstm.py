@@ -23,8 +23,7 @@ class StockPredictor:
         self.training_metadata = {}
         self.backcandles = 20
         self.target_column = -1
-        # Features: Open, High, Low, vwap, Adj Close, SMA_20, SMA_50, SMA_200, RSI, MACD, Signal_Line, Middle_Band, Upper_Band, Lower_Band, EMA
-        self.feature_columns = None#[0,1,2,4,5,6,7,8,9,10,11,12,13,14,15]
+        self.feature_columns = None
         self.lstm_units = 100
         self.batch_size = 12
         self.epochs = 50

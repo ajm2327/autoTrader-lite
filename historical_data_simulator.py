@@ -251,30 +251,27 @@ class HistoricalDataSimulator:
         Returns a simplified RVOL calculation that avoids timezone issues
         by using a lookback period approach.
         """
-        if self.current_index <= 0 or self.current_index >= len(self.data):
+        if self.current_index <= 0:
             return 1.0  # Default value if we don't have enough data
             
         # Get the current timestamp and volume
-        current_idx = min(self.current_index-1, len(self.data)-1)
-        current_vol = self.data.iloc[current_idx]["Volume"]
+        current_timestamp = self.data.index[self.current_index-1]
+        current_date = current_timestamp.date()
         
-        # Use lookback periods to avoid timezone complexities
-        lookback = 30  # Periods to look back
-        lookback_start = max(0, self.current_index - lookback - 1)
-        lookback_end = max(0, self.current_index - 1)
+        # Get today's cumulative volume up to current simulation point
+        today_mask = self.data.index.date == current_date
+        today_so_far_mask = today_mask & (self.data.index <= current_timestamp)
+        today_volume_so_far = self.data[today_so_far_mask]['Volume'].sum()
+
+        # Get past 20 days of complete daily volumes
+        past_data = self.data[self.data.index.date < current_date]
+        if len(past_data) == 0:
+            return 1.0
         
-        if lookback_start >= lookback_end:
-            return 1.0  # Not enough data
-        
-        # Get average volume of previous periods
-        prev_vols = self.data.iloc[lookback_start:lookback_end]["Volume"]
-        
-        if len(prev_vols) > 0:
-            avg_vol = prev_vols.mean()
-            if avg_vol > 0:
-                return current_vol / avg_vol
-                
-        return 1.0  # Default to 1.0 if we can't calculate
+        daily_volumes = past_data.groupby(past_data.index.date)['Volume'].sum()
+        avg_daily_vol = daily_volumes.tail(20).mean() if len(daily_volumes) > 0 else 1.0
+
+        return today_volume_so_far / avg_daily_vol if avg_daily_vol > 0 else 1.0
     
     def get_lstm_prediction(self):
         """Get lstm prediction for current market state"""
