@@ -4,8 +4,11 @@ simulation_logs/
 models_saved/
 best_model.keras
 autotrader_lite.db
+autotrader-lite.pem
+current_data_chunk.csv
 
 autoTrader-lite.code-workspace
+
 
 # Python cache files
 __pycache__/
