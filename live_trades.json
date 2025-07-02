@@ -24,3 +24,5 @@
 {"timestamp": "2025-06-23 14:28:11.068449", "action": "BUY", "symbol": "SPY", "qty": 167, "price": "['SPY'] ask price: 597.55, bid price: 597.53", "order_id": "e4683d17-fc16-4a04-92fc-1440ea88cbdd"}
 {"timestamp": "2025-06-23 14:28:24.037516", "action": "SELL", "symbol": "SPY", "qty": 167, "price": "['SPY'] ask price: 597.45, bid price: 597.43", "order_id": "8bfa2335-2d37-41f0-8fc1-6fc941a13ce4"}
 {"timestamp": "2025-06-23 14:29:11.422305", "action": "BUY", "symbol": "SPY", "qty": 200, "price": "['SPY'] ask price: 597.74, bid price: 597.72", "order_id": "95523805-e96d-46ad-a806-2e0f3e9b32ad"}
+{"timestamp": "2025-07-02 11:50:57.815512", "action": "BUY", "symbol": "SPY", "qty": 162, "price": "['SPY'] ask price: 619.75, bid price: 619.74", "order_id": "faef448b-93a8-40d0-8f84-a06e9d1080f5"}
+{"timestamp": "2025-07-02 11:51:06.210234", "action": "SELL", "symbol": "SPY", "qty": 162, "price": "['SPY'] ask price: 619.75, bid price: 619.74", "order_id": "9f55aafb-6061-467d-962f-fae11964b898"}

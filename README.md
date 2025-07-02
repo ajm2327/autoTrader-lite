@@ -180,5 +180,10 @@ View the dashboard on port 8501.
   * The LSTM currently only trains upon using the application for the first time. Retraining modules from a previous LSTM project will be refactored into this project to ensure the model remains current. 
 * RVOL Feature:
   * The add indicators function was refactored from a previous LSTM project without RVOL being considered. Currently, the RVOL is calculated inside of the simulation's data update messages inaccessible to the LSTM. RVOL should be calculated in the add_indicators function for consistent data access between the LSTM and the Decision Agent. 
+* Database Optimization:
+  * Currently the database is using SQLite, PostgreSQL would give better concurrent access and bulk operations.
+  * The indicators are recalculated for the entire dataset currently, it should be calculated incrementally/only on gap data for efficiency.
 * Dashboard Expansion:
   * The dashboard currently only shows the current update message, visualization, and AI decision. This can be improved to show trade logging, performance metrics, and smoother UX. 
+* Monitoring and Alerts:
+  * Email notifications for starting/stopping, trade execution, daily summaries, and errors.

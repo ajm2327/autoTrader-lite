@@ -11,7 +11,7 @@ from typing import Annotated, Literal
 from typing_extensions import TypedDict
 
 from langgraph.graph import StateGraph
-
+from langchain_core.messages import HumanMessage
 from data_util import get_alpaca_data, add_indicators, check_database_status, _update_indicators_in_database, _store_dataframe_in_database, remove_duplicate_records
 from alpaca_clients import llm, get_llm_with_tools, get_tool_node
 from lstm import StockPredictor
@@ -216,11 +216,11 @@ class HistoricalDataSimulator:
                 df_data = self._db_records_to_dataframe(existing_data)
 
                 #check for gaps
-                has_missing_data = self._find_missing_dates(df_data)
+                last_saved_date = self._find_missing_dates(df_data)
 
-                if has_missing_data:
-                    print(f"Found missing data points, fetching from API...")
-                    self._fetch_and_store_missing_data(session, start_date, end_date)
+                if last_saved_date:
+                    print(f"Found missing data points from {last_saved_date}, fetching from API...")
+                    self._fetch_and_store_missing_data(df_data, last_saved_date, end_date)
 
                     existing_data = DatabaseQueries.get_data_with_indicators(
                         session, self.ticker, start_date, end_date
@@ -230,7 +230,7 @@ class HistoricalDataSimulator:
             else:
                 # No data in db , fetch all data
                 print(f"    ❌ No data in batabase for {self.ticker}, fetching from API...")
-                return self._fetch_and_store_all_data(session, start_date, end_date)
+                return self._fetch_and_store_all_data(start_date, end_date)
     
     def _initialize_log_files(self):
         """Initialize empty log files"""
@@ -727,25 +727,39 @@ Based on this data, what is your next decision?
     def _find_missing_dates(self, existing_df):
         """Find missing dates in data,only checking for market hours"""
         if existing_df.empty:
-            return True # Fetch all data
+            return None
         
-        data_start = existing_df.index.min()
         data_end = existing_df.index.max()
 
-        if data_start <= pd.Timestamp(self.start_date) and data_end >= pd.Timestamp(self.end_date):
-            return False
+        if data_end >= pd.Timestamp(self.end_date):
+            return None
         
-        return True # some data missing
+        return data_end.strftime('%Y-%m-%d %H:%M:%S') # return last timestamp
     
     
-    def _fetch_and_store_missing_data(self, session, start_date, end_date):
+    def _fetch_and_store_missing_data(self, df_data, start_date, end_date):
         """Fetch all data from api and store in db"""
-        df = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
-        df = add_indicators(df, indicator_set='alternate',
+        # API call for gap data, gap data gets stored in db
+        df_gap = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
+
+        if df_data.index.tz is None:
+            df_data.index = df_data.index.tz_localize('UTC').tz_convert(self.eastern)
+        elif df_data.index.tz != self.eastern:
+            df_data.index = df_data.index.tz_convert(self.eastern)
+
+        if df_gap.index.tz is None:
+            df_gap.index = df_gap.index.tz_localize('UTC').tz_convert(self.eastern)
+        elif df_gap.index.tz != self.eastern:
+            df_gap.index = df_gap.index.tz_convert(self.eastern)
+
+        # combine existing data with gap data
+        combined_df = pd.concat([df_data, df_gap]).sort_index().drop_duplicates()
+        # recalculate indicators on complete dataset for accurate context
+        combined_df = add_indicators(combined_df, indicator_set='alternate',
                             store_in_db = True, ticker=self.ticker)
-        return df
+        return combined_df
     
-    def _fetch_and_store_all_data(self, session, start_date, end_date):
+    def _fetch_and_store_all_data(self, start_date, end_date):
         print(f"    📂 No Data in DB - fetching from Alpaca API...")
         df = get_alpaca_data(self.ticker, start_date, end_date, timescale=self.timescale, store_in_db=True)
         if df is not None and not df.empty:
@@ -1069,7 +1083,7 @@ def data_node(state):
 
 
 def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2025-04-17", 
-                             max_iterations=999, log_dir="simulation_logs"):
+                             max_iterations=None, log_dir="simulation_logs"):
     """
     Run a historical data simulation for a specified ticker and date range,
     focusing on the last day's price action.
