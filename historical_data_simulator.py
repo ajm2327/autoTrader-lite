@@ -454,7 +454,7 @@ What is your trading decision?
                 time_module.sleep(self.interval_seconds)
             
         # Calculate metrics
-=        current_price = next_chunk.iloc[-1]['Close']
+        current_price = next_chunk.iloc[-1]['Close']
         change_pct, open_price = self.calculate_price_change(current_price)
         
         # Determine if price is up or down 

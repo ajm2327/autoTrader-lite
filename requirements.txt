@@ -119,6 +119,8 @@ idna==3.10
     #   httpx
     #   requests
     #   yarl
+iniconfig==2.1.0
+    # via pytest
 jinja2==3.1.6
     # via
     #   altair
@@ -247,6 +249,7 @@ packaging==24.2
     #   langsmith
     #   marshmallow
     #   matplotlib
+    #   pytest
     #   streamlit
     #   tensorboard
     #   tensorflow-cpu
@@ -264,6 +267,8 @@ pillow==11.2.1
     # via
     #   matplotlib
     #   streamlit
+pluggy==1.6.0
+    # via pytest
 propcache==0.3.1
     # via
     #   aiohttp
@@ -307,11 +312,15 @@ pydantic-settings==2.9.1
 pydeck==0.9.1
     # via streamlit
 pygments==2.19.1
-    # via rich
+    # via
+    #   pytest
+    #   rich
 pyluach==2.2.0
     # via exchange-calendars
 pyparsing==3.2.3
     # via matplotlib
+pytest==8.4.1
+    # via -r requirements.in
 python-dateutil==2.9.0.post0
     # via
     #   matplotlib
