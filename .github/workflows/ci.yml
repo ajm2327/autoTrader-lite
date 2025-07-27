@@ -26,6 +26,12 @@ jobs:
           pip install -r requirements.txt
           pip install pytest
 
+      - name: Set up test environment variables
+        run: |
+          echo "ALPACA_API_KEY=fake_key" >> $GITHUB_ENV
+          echo "ALPACA_API_SECRET=fake_secret" >> $GITHUB_ENV
+          echo "GOOGLE_API_KEY=fake_google_key" >> $GITHUB_ENV
+
       - name: Run Tests
         run: |
           pytest tests/ -v
