@@ -130,6 +130,38 @@ def calculate_rsi(data, period=14):
     return rsi.fillna(50)
 
 
+def get_rvol(data):
+        """
+        The relative volume can show how active market sales are compared to the average within 20 days
+        Large relative volume means that the stock is more active, and likely to make larger moves.
+        It compares today's volume so far to the average total daily volume. 
+        RVOL is useful for smaller stocks that can trade steadily until they have a breakout from news or just unusual large trading activity.
+        """
+        df = data.copy()
+        df['date'] = df.index.date
+        rvol_values = []
+
+        for i in range(len(df)):
+            current_date = df.iloc[i]['date']
+            current_timestamp = df.index[i]
+
+            # today's cumulative volume up to this point
+            today_mask =  (df['date']==current_date) & (df.index <= current_timestamp)
+            today_volume_so_far = df[today_mask]['Volume'].sum()
+
+            # Get past 20 days of complete daily volumes
+            past_data = df[df['date'] < current_date]
+            if len(past_data) == 0:
+                rvol_values.append(1.0)
+                continue
+        
+            daily_volumes = past_data.groupby('date')['Volume'].sum()
+            avg_daily_vol = daily_volumes.tail(20).mean()
+
+            rvol = today_volume_so_far / avg_daily_vol if avg_daily_vol > 0 else 1.0
+            rvol_values.append(rvol)
+
+        return pd.Series(rvol_values, index=data.index)
 
 # ADD INDICATOR FUNCTION FOR HISTORICAL DATA RETRIEVAL: 
 def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None):
@@ -199,6 +231,7 @@ def add_indicators(data, indicator_set='default', store_in_db=True, ticker=None)
         std_dev = data['Close'].rolling(window=20).std()
         data['Upper_Band'] = data['Middle_Band'] + (std_dev * 2)
         data['Lower_Band'] = data['Middle_Band'] - (std_dev * 2)
+        data['RVOL'] = get_rvol(data)
         
         # Add EMA
         #data['EMA'] = data['Close'].ewm(span=50, adjust=False).mean()

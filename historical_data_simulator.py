@@ -35,7 +35,10 @@ from database import (
 
 class HistoricalDataSimulator:
     """
-    Enhanced historical data simulator with price change tracking and persistent logging
+    This is the main state machine for the decision agent's stock data environment.
+    It creates a data stream for the decision agent to monitor and act upon.
+    The data stream includes Alpaca historical data, LSTM, and calculated indicators.
+
     """
     def __init__(self, ticker, start_date, end_date, interval_seconds=30, timescale="Minute", log_dir="simulation_logs"):
         """
@@ -88,19 +91,25 @@ class HistoricalDataSimulator:
         try:
             print(f"Loading historical data for {self.ticker} from {self.start_date} to {self.end_date}...")
             
+            # Start SQlite database
             init_database()
 
+            # Immediately check and remove any duplicate records
             remove_duplicate_records(self.ticker)
-
             check_database_status(self.ticker, self.start_date, self.end_date)
+
+
             #INCLUDE LSTM FOR TRAINING, new LSTM START DATE:
+            # Grab just the last week of data for quick training
             lstm_start_date = (datetime.strptime(self.start_date, '%Y-%m-%d') - timedelta(days=7)).strftime('%Y-%m-%d')#timedelta(days=365*2)).strftime('%Y-%m-%d')
             
+            # Create target date for data retrieval, simulation always starts on the last day of the simulation period.
             target_date = datetime.strptime(self.end_date, '%Y-%m-%d')
 
+            # If target it today, check if market is open
             if target_date.date() == datetime.now().date():
                 current_time = datetime.now(self.eastern)
-                print(f"current_time type: {type(current_time)}, value: {current_time}")
+                #print(f"current_time type: {type(current_time)}, value: {current_time}")
                 if current_time.time() < time(9,30):
                     print("❌ Market hasn't opened yet today")
                     return False
@@ -112,20 +121,20 @@ class HistoricalDataSimulator:
 
             # Get full historical data
             #self.data = get_alpaca_data(ticker = self.ticker,start_date = lstm_start_date,end_date = self.end_date,timescale = self.timescale)
+            # Use load or fetch data to avoid unnecessary API calls
             self.data = self._load_or_fetch_data(lstm_start_date, self.end_date)
 
             if self.data is None or self.data.empty:
                 print(f"❌ Could not retrieve historical data for {self.ticker}")
                 return False
-
-            # Add indicators using full historical data
-            #self.data = add_indicators(data=self.data, indicator_set='alternate')
+            
             print(f"✅ Loaded {len(self.data)} total data points")
             
             # INITIALIZE LSTM
             print("Initializing and training LSTM...")
             self.predictor = StockPredictor(data = self.data, ticker=self.ticker)
             
+            # Load or train the LSTM model
             try:
                 metadata = self.predictor.load_model()
                 print(f"✅ Loaded existing LSTM model: {metadata['version']}")
@@ -136,13 +145,14 @@ class HistoricalDataSimulator:
                 print(f"✅ New LSTM model saved to {saved_path}")
             print("LSTM initialized successfully")
             
-            # Separate training data from data period just for gemini
+            # Separate training data from data period for decision agent
             if self.data.index.tz is None:
                 self.data.index = pd.to_datetime(self.data.index, utc = True).tz_convert(self.eastern)
             elif self.data.index.tz != self.eastern:
                 self.data.index = self.data.index.tz_convert(self.eastern)
             market_open = self.eastern.localize(target_date.replace(hour=9, minute=30))
 
+            # Not using data outside of market hours
             sim_data = self.data[self.data.index >= market_open]
 
             if sim_data.empty:
@@ -160,13 +170,14 @@ class HistoricalDataSimulator:
                 print(f"❌ No Data found for target date {self.end_date}")
                 return False
             
+            # Set index to start of target day's market data
             self.current_index = 0
+            # Initialize caching for frontend dashboard and database ops
             self.realtime_cache=[]
 
             print(f"📅 Simulation starting at market open: {self.data.index[0]}")
             print(f"    Data points available: {len(self.data)}")
             print(f"    ⌚ Live day: {self.is_live_day}")
-            # Identify the last day's data
             
             # Initialize empty log files
             self._initialize_log_files()
@@ -215,9 +226,10 @@ class HistoricalDataSimulator:
                 print(f"    ✅ Found {len(existing_data)} records in database")
                 df_data = self._db_records_to_dataframe(existing_data)
 
-                #check for gaps
+                #check for gaps in dataset
                 last_saved_date = self._find_missing_dates(df_data)
 
+                # if there are gaps, fetch missing data from API and store in DB
                 if last_saved_date:
                     print(f"Found missing data points from {last_saved_date}, fetching from API...")
                     self._fetch_and_store_missing_data(df_data, last_saved_date, end_date)
@@ -240,32 +252,6 @@ class HistoricalDataSimulator:
             json.dump([], f)
         print(f"📝 Log files initialized at {self.log_dir}")
     
-    def sim_get_rvol(self):
-        """
-        Returns a simplified RVOL calculation that avoids timezone issues
-        by using a lookback period approach.
-        """
-        if self.current_index <= 0:
-            return 1.0  # Default value if we don't have enough data
-            
-        # Get the current timestamp and volume
-        current_timestamp = self.data.index[self.current_index-1]
-        current_date = current_timestamp.date()
-        
-        # Get today's cumulative volume up to current simulation point
-        today_mask = self.data.index.date == current_date
-        today_so_far_mask = today_mask & (self.data.index <= current_timestamp)
-        today_volume_so_far = self.data[today_so_far_mask]['Volume'].sum()
-
-        # Get past 20 days of complete daily volumes
-        past_data = self.data[self.data.index.date < current_date]
-        if len(past_data) == 0:
-            return 1.0
-        
-        daily_volumes = past_data.groupby(past_data.index.date)['Volume'].sum()
-        avg_daily_vol = daily_volumes.tail(20).mean() if len(daily_volumes) > 0 else 1.0
-
-        return today_volume_so_far / avg_daily_vol if avg_daily_vol > 0 else 1.0
     
     def get_lstm_prediction(self):
         """Get lstm prediction for current market state"""
@@ -339,7 +325,6 @@ class HistoricalDataSimulator:
         current_time = datetime.now(self.eastern)
         
         # Calculate metrics
-        rvol = self.sim_get_rvol()
         current_price = initial_chunk.iloc[-1]['Close']
         change_pct, open_price = self.calculate_price_change(current_price)
 
@@ -379,16 +364,13 @@ Indicators:
 - RSI: {initial_chunk.iloc[-1]['RSI']:.2f}
 - MACD: {initial_chunk.iloc[-1]['MACD']:.4f}
 - Signal Line: {initial_chunk.iloc[-1]['Signal_Line']:.4f}
-- RVOL: {rvol:.2f}
+- RVOL: {next_chunk.iloc[-1]['RVOL']:.2f}
 - Upper Bollinger Band: {initial_chunk.iloc[-1]['Upper_Band']:.2f}
 - Middle Bollinger Band: {initial_chunk.iloc[-1]['Middle_Band']:.2f}
 - Lower Bollinger Band: {initial_chunk.iloc[-1]['Lower_Band']:.2f}
 
 What is your trading decision?
 """
-# I removed these indicators because they depend on daily candles: 
-#- SMA_20: ${initial_chunk.iloc[-1]['SMA_20']:.2f}
-#- SMA_50: ${initial_chunk.iloc[-1]['SMA_50']:.2f}
 
 
         print("\n🔵 INITIAL DATA SENT TO AGENT:")
@@ -472,8 +454,7 @@ What is your trading decision?
                 time_module.sleep(self.interval_seconds)
             
         # Calculate metrics
-        rvol = self.sim_get_rvol()
-        current_price = next_chunk.iloc[-1]['Close']
+=        current_price = next_chunk.iloc[-1]['Close']
         change_pct, open_price = self.calculate_price_change(current_price)
         
         # Determine if price is up or down 
@@ -515,7 +496,7 @@ Indicators:
 - MACD: {next_chunk.iloc[-1]['MACD']:.4f}
 - Signal Line: {next_chunk.iloc[-1]['Signal_Line']:.4f}
 - VWAP: ${next_chunk.iloc[-1]['vwap']:.2f}
-- RVOL: {rvol:.2f}
+- RVOL: {next_chunk.iloc[-1]['RVOL']:.2f}
 - Upper Bollinger Band: {next_chunk.iloc[-1]['Upper_Band']:.2f}
 - Middle Bollinger Band: {next_chunk.iloc[-1]['Middle_Band']:.2f}
 - Lower Bollinger Band: {next_chunk.iloc[-1]['Lower_Band']:.2f}{human_input}
@@ -1083,7 +1064,7 @@ def data_node(state):
 
 
 def run_historical_simulation(ticker="AMD", start_date="2025-03-01", end_date="2025-04-17", 
-                             max_iterations=None, log_dir="simulation_logs"):
+                             max_iterations=5000, log_dir="simulation_logs"):
     """
     Run a historical data simulation for a specified ticker and date range,
     focusing on the last day's price action.
