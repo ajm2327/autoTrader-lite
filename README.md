@@ -2,6 +2,9 @@
 This is an AI powered single-stock focused Decision Agent using an LSTM neural network for SPY analysis and automated decision making.
 
 # VISIT THE LIVE DEMO: 
+### NOTE:
+**The live demo is currently unavailable. If you wish to view the live demo, please email me at montano.adam.2001@gmail.com, and we can schedule a time for it to be turned back on.**
+
 [autotrader-lite.adammontano.net](http://autotrader-lite.adammontano.net)
 
 ## Available during NYSE Market Hours
